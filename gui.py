@@ -4,7 +4,7 @@ from PyQt5.QtGui import QIcon
 import re, plugins
 
 class MainWindow(QMainWindow):
-    sources = {
+    __sources = {
         "left":  None,
         "right": None
     }
@@ -13,32 +13,31 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.buildUI()
 
-    def bogus_plugin(self, plugin_name):
+    def __bogus_plugin(self, plugin_name):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus plugin", plugin_name + " plugin is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
-    def change_source(window, source_name, sourceDialog, sourcesList, sourceName):
+    def __change_source(self, source_name, sourceDialog, sourcesList, sourceName):
         plugin_name = sourcesList.currentItem().text()
         plugin_slug = sourcesList.currentItem().slug
         if not plugin_slug in plugins.plugins:
-            window.bogus_plugin(plugin_name)
+            self.__bogus_plugin(plugin_name)
             return
         source = plugins.plugins[plugin_slug]
-        if not "getTracklists" in dir(source):
-            window.bogus_plugin(plugin_name)
-            return
-        playlists = source.getTracklists()
+        if not source.isAuthenticated():
+            source.authenticate(self)
+        playlists = source.getPlaylists()
         if not playlists or len(playlists) == 0:
-            window.bogus_plugin(plugin_name)
+            self.__bogus_plugin(plugin_name)
             return
-        window.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + plugin_name)
-        window.sources[sourceName] = plugin_slug
-        playlistSelect = window.findChild(QComboBox, source_name + "Playlist")
+        self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + plugin_name)
+        self.__sources[sourceName] = plugin_slug
+        playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
         for playlist in playlists:
             playlistSelect.addItem(playlist)
         sourceDialog.close()
 
-    def source_select(self, source_name):
+    def __source_select(self, source_name):
         sources = plugins.listAll()
         if len(sources) == 0:
             errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source plugins found", QMessageBox.Ok, self)
@@ -52,7 +51,7 @@ class MainWindow(QMainWindow):
         dialogLayout.addWidget(sourcesList)
         buttonsLayout = QHBoxLayout()
         okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Ok")
-        okButton.clicked.connect(lambda: self.change_source(source_name, sourceDialog, sourcesList, sourceName))
+        okButton.clicked.connect(lambda: self.__change_source(source_name, sourceDialog, sourcesList, sourceName))
         buttonsLayout.addWidget(okButton)
         cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
         cancelButton.clicked.connect(sourceDialog.close)
@@ -62,10 +61,10 @@ class MainWindow(QMainWindow):
             sourceItem = QListWidgetItem(source[1])
             sourceItem.slug = source[0]
             sourcesList.addItem(sourceItem)
-        sourcesList.itemDoubleClicked.connect(lambda: self.change_source(source_name, sourceDialog, sourcesList, sourceName))
+        sourcesList.itemDoubleClicked.connect(lambda: self.__change_source(source_name, sourceDialog, sourcesList, sourceName))
         sourceDialog.show()
 
-    def create_source_layout(self, source_name):
+    def __create_source_layout(self, source_name):
         sourceLayout = QVBoxLayout()
         selectedSourceLayout = QHBoxLayout()
         sourceLabel = QLabel("Selected source: None")
@@ -73,7 +72,7 @@ class MainWindow(QMainWindow):
         selectedSourceLayout.addWidget(sourceLabel, 1)
         changeSourceBtn = QPushButton("Change...")
         changeSourceBtn.setObjectName(source_name + "SourceBtn")
-        changeSourceBtn.clicked.connect(lambda: self.source_select(source_name))
+        changeSourceBtn.clicked.connect(lambda: self.__source_select(source_name))
         selectedSourceLayout.addWidget(changeSourceBtn)
         playlistLabel = QLabel("Selected playlist:")
         selectedSourceLayout.addWidget(playlistLabel)
@@ -87,7 +86,7 @@ class MainWindow(QMainWindow):
         sourceLayout.addWidget(trackList)
         return (sourceLayout, playlistSelect, trackList, changeSourceBtn)
 
-    def start_sync(self):
+    def __start_sync(self):
         if not (self.sources["left"] and self.sources["right"] and self.playlists["left"] and self.playlists["right"]):
             errorMsg = QMessageBox(QMessageBox.Warning, "No sources selected", "You must select sources and playlists first", QMessageBox.Ok, self)
             errorMsg.show()
@@ -101,9 +100,9 @@ class MainWindow(QMainWindow):
 
         mainLayout = QHBoxLayout()
 
-        leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.create_source_layout("left")
+        leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.__create_source_layout("left")
         mainLayout.addLayout(leftLayout)
-        rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.create_source_layout("right")
+        rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
         mainLayout.addLayout(rightLayout)
 
         windowLayout.addLayout(mainLayout)
@@ -111,7 +110,7 @@ class MainWindow(QMainWindow):
         buttonsWidget = QWidget()
         buttonsLayout = QHBoxLayout(buttonsWidget)
         syncBtn = QPushButton(QIcon.fromTheme("system-run"), "S&ync")
-        syncBtn.clicked.connect(self.start_sync)
+        syncBtn.clicked.connect(self.__start_sync)
         buttonsLayout.addWidget(syncBtn, 1, Qt.AlignRight)
         settingsBtn = QPushButton(QIcon.fromTheme("preferences-other"), "&Settings")
         buttonsLayout.addWidget(settingsBtn, 1, Qt.AlignRight)
