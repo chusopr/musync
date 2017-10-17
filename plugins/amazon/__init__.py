@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QVBoxLayout, QGridLayout, QLabel, QDialog, QLineEdit, QDialogButtonBox, QMessageBox
 from PyQt5.QtCore import Qt
 from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, WebDriverException
 import requests, plugins
 
 # Sorry for the mess...
@@ -10,8 +10,7 @@ class Plugin(plugins.Plugin):
     __name = "Amazon Music"
     __authenticated = False
 
-    # FIXME: use global URL
-    __login_url = "https://www.amazon.co.uk/gp/dmusic/cloudplayer/forceSignIn/ref=dm_wcp_unrec_ctxt_sign_in"
+    __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
     __chromedriver_path = "/usr/lib/chromium-browser/chromedriver"
 
@@ -30,12 +29,7 @@ class Plugin(plugins.Plugin):
         errorMsg.setModal(True)
         errorMsg.show()
 
-    def __login(self, authDialog, username, password):
-        waitMsg = QMessageBox(QMessageBox.Information, "Authenticating...", "Please wait while you are being authenticated with %s." % self.__name, QMessageBox.NoButton, authDialog)
-        waitMsg.setModal(True)
-        waitMsg.show()
-        driver = webdriver.Chrome(executable_path=self.__chromedriver_path)
-        driver.get(self.__login_url)
+    def __submit_login(self, driver, username, password, waitMsg, authDialog, redirected=False):
         userInput = driver.find_element_by_id('ap_email')
         passInput = driver.find_element_by_id('ap_password')
         if not userInput or not passInput:
@@ -51,6 +45,7 @@ class Plugin(plugins.Plugin):
         try:
             driver.find_element_by_id('auth-error-message-box')
             errorMsg = QMessageBox(QMessageBox.Warning, "Invalid credentials", "The provided credentials are not valid for %s.\nPlease make sure the provided e-mail address and password are correct." % self.__name, QMessageBox.Ok, authDialog)
+            errorMsg.setModal(True)
             errorMsg.show()
             waitMsg.close()
             driver.quit()
@@ -58,16 +53,53 @@ class Plugin(plugins.Plugin):
         except NoSuchElementException:
             pass
 
-        # TODO: check if we have been redirected
-        if not driver.execute_script("return amznMusic.appConfig.customerId;"):
-            __possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
+        captcha = False
+        try:
+            captcha = driver.find_element_by_id('image-captcha-section')
+        except NoSuchElementException:
+            pass
+
+        if captcha:
+            captcha_img = captcha.find_element_by_tag_name("img")
+            # TODO
+            captchaForm = CaptchaForm(captcha_img.get_attribute("src"))
+            return self.__captcha_login()
+
+        # We only test for a redirect once
+        if not redirected:
+            redirect_found = False
+            try:
+                driver.find_element_by_id('ap_email')
+                driver.find_element_by_id('ap_password')
+                redirect_found = True
+            except NoSuchElementException:
+                pass
+
+            if redirect_found:
+                return self.__submit_login(driver, username, password, waitMsg, authDialog, redirected=True)
+
+    def __login(self, authDialog, username, password):
+        waitMsg = QMessageBox(QMessageBox.Information, "Authenticating...", "Please wait while you are being authenticated with %s." % self.__name, QMessageBox.NoButton, authDialog)
+        waitMsg.setModal(True)
+        waitMsg.show()
+        driver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+        driver.get(self.__login_url)
+        self.__submit_login(driver, username, password, waitMsg, authDialog)
+
+        amznExists = False
+        try:
+            if driver.execute_script("return amznMusic.appConfig.customerId;"):
+                amznExists = True
+        except WebDriverException:
+            pass
+
+        if not amznExists:
+            self.__possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
             # Should we allow the user to try again with different credentials?
             waitMsg.close()
-            #driver.quit()
+            driver.quit()
             authDialog.reject()
             return
-
-        # TODO: check if a CAPTCHA is required by searching for image-captcha-section
 
         amzn = {
             'deviceId'  : driver.execute_script("return amznMusic.appConfig.deviceId;"),
@@ -105,7 +137,7 @@ class Plugin(plugins.Plugin):
         api_check = requests.post("https://music.amazon.co.uk/cirrus/v3/", headers=headers, json=data)
 
         if not api_check.status_code == 200:
-            __possibly_outdated("Test request to %s failed." % self.__name, authDialog)
+            self.__possibly_outdated("Test request to %s failed." % self.__name, authDialog)
             waitMsg.close()
             authDialog.reject()
             return
