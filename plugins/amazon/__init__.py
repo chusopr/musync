@@ -1,10 +1,51 @@
-from PyQt5.QtWidgets import QVBoxLayout, QGridLayout, QLabel, QDialog, QLineEdit, QDialogButtonBox, QMessageBox
+from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QDialog, QLineEdit, QDialogButtonBox, QMessageBox
 from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QPixmap
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 import requests, plugins
 
 # Sorry for the mess...
+
+class CaptchaForm(QDialog):
+    __captcha_response = None
+
+    def __init__(self, imgurl):
+        super().__init__()
+
+        windowLayout = QVBoxLayout(self)
+
+        imageLabel = QLabel(self)
+        image_request = requests.get(imgurl)
+        captcha_image = QPixmap()
+        captcha_image.loadFromData(image_request.content)
+        imageLabel.setPixmap(captcha_image)
+        windowLayout.addWidget(imageLabel)
+
+        captchaLayout = QHBoxLayout()
+
+        captchaLayout.addWidget(QLabel("Please input the text in the image:"))
+        captchaText = QLineEdit(self)
+        captchaLayout.addWidget(captchaText)
+        windowLayout.addLayout(captchaLayout)
+
+        buttonBox = QDialogButtonBox(self);
+        buttonBox.setOrientation(Qt.Horizontal)
+        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok);
+
+        windowLayout.addWidget(buttonBox);
+
+        buttonBox.accepted.connect(lambda: self.__set_response(captchaText.text()))
+        buttonBox.rejected.connect(self.reject)
+
+        self.setWindowTitle('CAPTCHA required')
+
+    def __set_response(self, text):
+        self.__captcha_response = text
+        self.accept()
+
+    def get_response(self):
+        return self.__captcha_response
 
 class Plugin(plugins.Plugin):
     __name = "Amazon Music"
@@ -38,20 +79,10 @@ class Plugin(plugins.Plugin):
             authDialog.reject()
             driver.quit()
             return
+        userInput.clear()
+        passInput.clear()
         userInput.send_keys(username)
         passInput.send_keys(password)
-        passInput.submit()
-
-        try:
-            driver.find_element_by_id('auth-error-message-box')
-            errorMsg = QMessageBox(QMessageBox.Warning, "Invalid credentials", "The provided credentials are not valid for %s.\nPlease make sure the provided e-mail address and password are correct." % self.__name, QMessageBox.Ok, authDialog)
-            errorMsg.setModal(True)
-            errorMsg.show()
-            waitMsg.close()
-            driver.quit()
-            return
-        except NoSuchElementException:
-            pass
 
         captcha = False
         try:
@@ -61,9 +92,29 @@ class Plugin(plugins.Plugin):
 
         if captcha:
             captcha_img = captcha.find_element_by_tag_name("img")
-            # TODO
             captchaForm = CaptchaForm(captcha_img.get_attribute("src"))
-            return self.__captcha_login()
+            captchaForm.exec()
+            if not captchaForm.get_response():
+                return False
+            captcha_input = driver.find_element_by_name("guess")
+            captcha_input.clear()
+            captcha_input.send_keys(captchaForm.get_response())
+            # A CAPTCHA resets the redirect detector
+            redirected = False
+
+        passInput.submit()
+
+        try:
+            driver.find_element_by_id('auth-error-message-box')
+            # TODO return error message by Amazon
+            errorMsg = QMessageBox(QMessageBox.Warning, "Invalid credentials", "The provided credentials%s are not valid for %s.\nPlease make sure the provided e-mail address and password are correct." % (" or text for the CAPTCHA image" if captcha else "", self.__name), QMessageBox.Ok, authDialog)
+            errorMsg.setModal(True)
+            errorMsg.show()
+            waitMsg.close()
+            driver.quit()
+            return
+        except NoSuchElementException:
+            pass
 
         # We only test for a redirect once
         if not redirected:
