@@ -3,7 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
-import requests, plugins
+import requests, plugins, json
 
 # Sorry for the mess...
 
@@ -50,6 +50,8 @@ class CaptchaForm(QDialog):
 class Plugin(plugins.Plugin):
     __name = "Amazon Music"
     __authenticated = False
+    __cookies = {}
+    __amzn = {}
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
@@ -152,7 +154,7 @@ class Plugin(plugins.Plugin):
             authDialog.reject()
             return
 
-        amzn = {
+        self.__amzn = {
             'deviceId'  : driver.execute_script("return amznMusic.appConfig.deviceId;"),
             'customerId': driver.execute_script("return amznMusic.appConfig.customerId;"),
             'deviceType': driver.execute_script("return amznMusic.appConfig.deviceType;"),
@@ -161,9 +163,9 @@ class Plugin(plugins.Plugin):
             'csrf_token': driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;")
         }
 
-        cookies = {}
+        self.__cookies = {}
         for cookie in driver.get_cookies():
-            cookies[cookie["name"]] = cookie["value"]
+            self.__cookies[cookie["name"]] = cookie["value"]
 
         driver.quit()
 
@@ -172,17 +174,17 @@ class Plugin(plugins.Plugin):
             'Content-Type': 'application/json',
             'Content-Encoding': 'amz-1.0',
             'X-Amz-Target': 'com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions',
-            'Cookie': 'session-id-time=%s; session-id=%s; at-acbuk=%s; ubid-acbuk=%s' % (cookies["session-id-time"], cookies["session-id"], cookies["at-acbuk"], cookies["ubid-acbuk"]),
-            'csrf-rnd': amzn["csrf_rnd"],
-            'csrf-token': amzn["csrf_token"],
-            'csrf-ts': amzn["csrf_ts"]
+            'Cookie': 'session-id-time=%s; session-id=%s; at-acbuk=%s; ubid-acbuk=%s' % (self.__cookies["session-id-time"], self.__cookies["session-id"], self.__cookies["at-acbuk"], self.__cookies["ubid-acbuk"]),
+            'csrf-rnd': self.__amzn["csrf_rnd"],
+            'csrf-token': self.__amzn["csrf_token"],
+            'csrf-ts': self.__amzn["csrf_ts"]
         }
 
         data = {
             "clientActionList": [],
-            "deviceType": amzn["deviceType"],
-            "deviceId": amzn["deviceId"],
-            "customerId": amzn["customerId"]
+            "deviceType": self.__amzn["deviceType"],
+            "deviceId": self.__amzn["deviceId"],
+            "customerId": self.__amzn["customerId"]
         }
 
         api_check = requests.post("https://music.amazon.co.uk/cirrus/v3/", headers=headers, json=data)
@@ -231,4 +233,37 @@ class Plugin(plugins.Plugin):
         authDialog.exec()
 
     def getPlaylists(self):
-        return ['My Music']
+        # FIXME: at-acbuk, ubid-acbuk
+            #'Cookie': 'session-id-time=%s; session-id=%s; at-acbuk=%s; ubid-acbuk=%s' % (cookies["session-id-time"], cookies["session-id"], cookies["at-acbuk"], cookies["ubid-acbuk"]),
+        headers = {
+            'Content-Type': 'application/json',
+            'Content-Encoding': 'amz-1.0',
+            'X-Amz-Target': 'com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary',
+            'Cookie': 'at-acbuk=%s; ubid-acbuk=%s' % (self.__cookies["at-acbuk"], self.__cookies["ubid-acbuk"]),
+            'csrf-rnd': self.__amzn["csrf_rnd"],
+            'csrf-token': self.__amzn["csrf_token"],
+            'csrf-ts': self.__amzn["csrf_ts"]
+        }
+
+        data = {
+            "clientActionList": [],
+            "deviceType": self.__amzn["deviceType"],
+            "deviceId": self.__amzn["deviceId"],
+            "customerId": self.__amzn["customerId"]
+        }
+
+        # TODO fix domain
+        playlists_request = requests.post("https://music.amazon.co.uk/cloudplayer/playlists/", headers=headers, json=data)
+        amznPlaylists = json.loads(playlists_request.text)
+
+        # Add history playlist
+        playlists = [{"id": "my-music", "name": "My music", "writable": True}]
+        for p in amznPlaylists["playlists"]:
+            playlist = {
+                "id": p["playlistId"],
+                "name": p["title"],
+                "writable": p["canEditContents"]
+            }
+            playlists.append(playlist)
+
+        return playlists
