@@ -127,6 +127,8 @@ class Plugin(plugins.Plugin):
             if redirect_found:
                 return self.__submit_login(username, password, redirected=True)
 
+        return True
+
     def __login(self, authDialog, username, password):
         waitMsg = QMessageBox(QMessageBox.Information, "Authenticating...", "Please wait while you are being authenticated with %s." % self.__name, QMessageBox.NoButton, authDialog)
         waitMsg.setModal(True)
@@ -140,6 +142,7 @@ class Plugin(plugins.Plugin):
             waitMsg.close()
             self.__webdriver.quit()
             self.__webdriver = None
+            self.__possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
             authDialog.reject()
             return login_result
         elif login_result == False:
@@ -154,7 +157,6 @@ class Plugin(plugins.Plugin):
             pass
 
         if not amznExists:
-            self.__possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
             # Should we allow the user to try again with different credentials?
             waitMsg.close()
             self.__webdriver.quit()
