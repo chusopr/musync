@@ -24,8 +24,8 @@ class MainWindow(QMainWindow):
             self.__bogus_plugin(plugin_name)
             return
         source = plugins.plugins[plugin_slug]
-        if not source.isAuthenticated():
-            source.authenticate(self)
+        if not source.isAuthenticated() and not source.authenticate(self):
+            return False
         playlists = source.getPlaylists()
         if not playlists or len(playlists) == 0:
             self.__bogus_plugin(plugin_name)

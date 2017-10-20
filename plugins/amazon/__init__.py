@@ -52,6 +52,7 @@ class Plugin(plugins.Plugin):
     __authenticated = False
     __cookies = {}
     __amzn = {}
+    __webdriver = None
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
@@ -72,15 +73,12 @@ class Plugin(plugins.Plugin):
         errorMsg.setModal(True)
         errorMsg.show()
 
-    def __submit_login(self, driver, username, password, waitMsg, authDialog, redirected=False):
-        userInput = driver.find_element_by_id('ap_email')
-        passInput = driver.find_element_by_id('ap_password')
+    def __submit_login(self, username, password, redirected=False):
+        userInput = self.__webdriver.find_element_by_id('ap_email')
+        passInput = self.__webdriver.find_element_by_id('ap_password')
         if not userInput or not passInput:
-            self.__possibly_outdated("Username and/or password input boxes not found in %s site." % self.__name, authDialog)
-            waitMsg.close()
-            authDialog.reject()
-            driver.quit()
-            return
+            self.__possibly_outdated("Username and/or password input boxes not found in %s site." % self.__name, self)
+            return None
         userInput.clear()
         passInput.clear()
         userInput.send_keys(username)
@@ -88,7 +86,7 @@ class Plugin(plugins.Plugin):
 
         captcha = False
         try:
-            captcha = driver.find_element_by_id('image-captcha-section')
+            captcha = self.__webdriver.find_element_by_id('image-captcha-section')
         except NoSuchElementException:
             pass
 
@@ -98,7 +96,7 @@ class Plugin(plugins.Plugin):
             captchaForm.exec()
             if not captchaForm.get_response():
                 return False
-            captcha_input = driver.find_element_by_name("guess")
+            captcha_input = self.__webdriver.find_element_by_name("guess")
             captcha_input.clear()
             captcha_input.send_keys(captchaForm.get_response())
             # A CAPTCHA resets the redirect detector
@@ -107,14 +105,12 @@ class Plugin(plugins.Plugin):
         passInput.submit()
 
         try:
-            driver.find_element_by_id('auth-error-message-box')
+            self.__webdriver.find_element_by_id('auth-error-message-box')
             # TODO return error message by Amazon
-            errorMsg = QMessageBox(QMessageBox.Warning, "Invalid credentials", "The provided credentials%s are not valid for %s.\nPlease make sure the provided e-mail address and password are correct." % (" or text for the CAPTCHA image" if captcha else "", self.__name), QMessageBox.Ok, authDialog)
+            errorMsg = QMessageBox(QMessageBox.Warning, "Invalid credentials", "The provided credentials%s are not valid for %s.\nPlease make sure the provided e-mail address and password are correct." % (" or text for the CAPTCHA image" if captcha else "", self.__name), QMessageBox.Ok)
             errorMsg.setModal(True)
-            errorMsg.show()
-            waitMsg.close()
-            driver.quit()
-            return
+            errorMsg.exec()
+            return False
         except NoSuchElementException:
             pass
 
@@ -122,26 +118,37 @@ class Plugin(plugins.Plugin):
         if not redirected:
             redirect_found = False
             try:
-                driver.find_element_by_id('ap_email')
-                driver.find_element_by_id('ap_password')
+                self.__webdriver.find_element_by_id('ap_email')
+                self.__webdriver.find_element_by_id('ap_password')
                 redirect_found = True
             except NoSuchElementException:
                 pass
 
             if redirect_found:
-                return self.__submit_login(driver, username, password, waitMsg, authDialog, redirected=True)
+                return self.__submit_login(username, password, redirected=True)
 
     def __login(self, authDialog, username, password):
         waitMsg = QMessageBox(QMessageBox.Information, "Authenticating...", "Please wait while you are being authenticated with %s." % self.__name, QMessageBox.NoButton, authDialog)
         waitMsg.setModal(True)
         waitMsg.show()
-        driver = webdriver.Chrome(executable_path=self.__chromedriver_path)
-        driver.get(self.__login_url)
-        self.__submit_login(driver, username, password, waitMsg, authDialog)
+        if self.__webdriver == None:
+            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+        self.__webdriver.get(self.__login_url)
+        login_result = self.__submit_login(username, password)
+
+        if login_result == None:
+            waitMsg.close()
+            self.__webdriver.quit()
+            self.__webdriver = None
+            authDialog.reject()
+            return login_result
+        elif login_result == False:
+            waitMsg.close()
+            return login_result
 
         amznExists = False
         try:
-            if driver.execute_script("return amznMusic.appConfig.customerId;"):
+            if self.__webdriver.execute_script("return amznMusic.appConfig.customerId;"):
                 amznExists = True
         except WebDriverException:
             pass
@@ -150,26 +157,28 @@ class Plugin(plugins.Plugin):
             self.__possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
             # Should we allow the user to try again with different credentials?
             waitMsg.close()
-            driver.quit()
+            self.__webdriver.quit()
+            self.__webdriver = None
             authDialog.reject()
-            return
+            return None
 
         self.__amzn = {
-            'deviceId'  :     driver.execute_script("return amznMusic.appConfig.deviceId;"),
-            'customerId':     driver.execute_script("return amznMusic.appConfig.customerId;"),
-            'deviceType':     driver.execute_script("return amznMusic.appConfig.deviceType;"),
-            'csrf_rnd'  :     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_rnd;"),
-            'csrf_ts'   :     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_ts;"),
-            'csrf_token':     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;"),
-            'atCookieName':   driver.execute_script("return amznMusic.appConfig.atCookieName;"),
-            'ubidCookieName': driver.execute_script("return amznMusic.appConfig.ubidCookieName;")
+            'deviceId'  :     self.__webdriver.execute_script("return amznMusic.appConfig.deviceId;"),
+            'customerId':     self.__webdriver.execute_script("return amznMusic.appConfig.customerId;"),
+            'deviceType':     self.__webdriver.execute_script("return amznMusic.appConfig.deviceType;"),
+            'csrf_rnd'  :     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_rnd;"),
+            'csrf_ts'   :     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_ts;"),
+            'csrf_token':     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;"),
+            'atCookieName':   self.__webdriver.execute_script("return amznMusic.appConfig.atCookieName;"),
+            'ubidCookieName': self.__webdriver.execute_script("return amznMusic.appConfig.ubidCookieName;")
         }
 
         self.__cookies = {}
-        for cookie in driver.get_cookies():
+        for cookie in self.__webdriver.get_cookies():
             self.__cookies[cookie["name"]] = cookie["value"]
 
-        driver.quit()
+        self.__webdriver.quit()
+        self.__webdriver = None
 
         headers = {
             'Content-Type': 'application/json',
@@ -194,11 +203,16 @@ class Plugin(plugins.Plugin):
             self.__possibly_outdated("Test request to %s failed." % self.__name, authDialog)
             waitMsg.close()
             authDialog.reject()
-            return
+            return None
 
         self.__authenticated = True
         waitMsg.close()
         authDialog.accept()
+
+    def __reject_auth(self, authDialog):
+        authDialog.reject()
+        self.__webdriver.quit()
+        self.__webdriver = None
 
     def authenticate(self, window, force=False):
         if self.__authenticated and not force:
@@ -230,8 +244,8 @@ class Plugin(plugins.Plugin):
         authLayout.addWidget(buttonBox);
 
         buttonBox.accepted.connect(lambda: self.__login(authDialog, userInput.text(), passInput.text()))
-        buttonBox.rejected.connect(authDialog.reject)
-        authDialog.exec()
+        buttonBox.rejected.connect(lambda: self.__reject_auth(authDialog))
+        return True if authDialog.exec() == QDialog.Accepted else False
 
     def getPlaylists(self):
         headers = {
