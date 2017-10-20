@@ -33,6 +33,7 @@ class MainWindow(QMainWindow):
         self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + plugin_name)
         self.__sources[sourceName] = plugin_slug
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
+        playlistSelect.addItem("")
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist["id"])
         sourceDialog.close()
