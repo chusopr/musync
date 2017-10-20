@@ -155,12 +155,14 @@ class Plugin(plugins.Plugin):
             return
 
         self.__amzn = {
-            'deviceId'  : driver.execute_script("return amznMusic.appConfig.deviceId;"),
-            'customerId': driver.execute_script("return amznMusic.appConfig.customerId;"),
-            'deviceType': driver.execute_script("return amznMusic.appConfig.deviceType;"),
-            'csrf_rnd'  : driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_rnd;"),
-            'csrf_ts'   : driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_ts;"),
-            'csrf_token': driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;")
+            'deviceId'  :     driver.execute_script("return amznMusic.appConfig.deviceId;"),
+            'customerId':     driver.execute_script("return amznMusic.appConfig.customerId;"),
+            'deviceType':     driver.execute_script("return amznMusic.appConfig.deviceType;"),
+            'csrf_rnd'  :     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_rnd;"),
+            'csrf_ts'   :     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_ts;"),
+            'csrf_token':     driver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;"),
+            'atCookieName':   driver.execute_script("return amznMusic.appConfig.atCookieName;"),
+            'ubidCookieName': driver.execute_script("return amznMusic.appConfig.ubidCookieName;")
         }
 
         self.__cookies = {}
@@ -169,12 +171,11 @@ class Plugin(plugins.Plugin):
 
         driver.quit()
 
-        # FIXME: at-acbuk, ubid-acbuk
         headers = {
             'Content-Type': 'application/json',
             'Content-Encoding': 'amz-1.0',
             'X-Amz-Target': 'com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions',
-            'Cookie': 'session-id-time=%s; session-id=%s; at-acbuk=%s; ubid-acbuk=%s' % (self.__cookies["session-id-time"], self.__cookies["session-id"], self.__cookies["at-acbuk"], self.__cookies["ubid-acbuk"]),
+            'Cookie': 'session-id-time=%s; session-id=%s; %s=%s; %s=%s' % (self.__cookies["session-id-time"], self.__cookies["session-id"], self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
             'csrf-rnd': self.__amzn["csrf_rnd"],
             'csrf-token': self.__amzn["csrf_token"],
             'csrf-ts': self.__amzn["csrf_ts"]
@@ -233,13 +234,11 @@ class Plugin(plugins.Plugin):
         authDialog.exec()
 
     def getPlaylists(self):
-        # FIXME: at-acbuk, ubid-acbuk
-            #'Cookie': 'session-id-time=%s; session-id=%s; at-acbuk=%s; ubid-acbuk=%s' % (cookies["session-id-time"], cookies["session-id"], cookies["at-acbuk"], cookies["ubid-acbuk"]),
         headers = {
             'Content-Type': 'application/json',
             'Content-Encoding': 'amz-1.0',
             'X-Amz-Target': 'com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary',
-            'Cookie': 'at-acbuk=%s; ubid-acbuk=%s' % (self.__cookies["at-acbuk"], self.__cookies["ubid-acbuk"]),
+            'Cookie': '%s=%s; %s=%s' % (self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
             'csrf-rnd': self.__amzn["csrf_rnd"],
             'csrf-token': self.__amzn["csrf_token"],
             'csrf-ts': self.__amzn["csrf_ts"]
