@@ -73,6 +73,48 @@ class Plugin(plugins.Plugin):
         errorMsg.setModal(True)
         errorMsg.show()
 
+    def __request(self, endpoint, target, data={}, headers={}, redirected=False):
+        if not (
+            self.__authenticated and
+            type(self.__cookies) is dict and
+            type(self.__amzn)    is dict and
+            "atCookieName"   in self.__amzn and
+            "ubidCookieName" in self.__amzn and
+            "csrf_rnd"       in self.__amzn and
+            "csrf_token"     in self.__amzn and
+            "csrf_ts"        in self.__amzn and
+            "deviceType"     in self.__amzn and
+            "deviceId"       in self.__amzn and
+            "customerId"     in self.__amzn and
+            self.__amzn["atCookieName"]   in self.__cookies and
+            self.__amzn["ubidCookieName"] in self.__cookies
+        ):
+            if not self.authenticate(window=None, force=True):
+                return None
+
+        headers = {
+            'Content-Type': 'application/json',
+            'Content-Encoding': 'amz-1.0',
+            'X-Amz-Target': target,
+            'Cookie': '%s=%s; %s=%s' % (self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
+            'csrf-rnd': self.__amzn["csrf_rnd"],
+            'csrf-token': self.__amzn["csrf_token"],
+            'csrf-ts': self.__amzn["csrf_ts"]
+        }
+
+        data = {**data, **{
+            "deviceType": self.__amzn["deviceType"],
+            "deviceId": self.__amzn["deviceId"],
+            "customerId": self.__amzn["customerId"]
+        }}
+
+        r = requests.post("https://music.amazon.co.uk/%s" % endpoint, headers=headers, json=data)
+
+        if (r.status_code == 401):
+            return self.__request(endpoint, target, data, headers, True)
+
+        return r
+
     def __submit_login(self, username, password, redirected=False):
         userInput = self.__webdriver.find_element_by_id('ap_email')
         passInput = self.__webdriver.find_element_by_id('ap_password')
@@ -181,33 +223,17 @@ class Plugin(plugins.Plugin):
 
         self.__webdriver.quit()
         self.__webdriver = None
+        self.__authenticated = True
 
-        headers = {
-            'Content-Type': 'application/json',
-            'Content-Encoding': 'amz-1.0',
-            'X-Amz-Target': 'com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions',
-            'Cookie': 'session-id-time=%s; session-id=%s; %s=%s; %s=%s' % (self.__cookies["session-id-time"], self.__cookies["session-id"], self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
-            'csrf-rnd': self.__amzn["csrf_rnd"],
-            'csrf-token': self.__amzn["csrf_token"],
-            'csrf-ts': self.__amzn["csrf_ts"]
-        }
+        api_check = self.__request("cirrus/v3/", "com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions", data={"clientActionList": []})
 
-        data = {
-            "clientActionList": [],
-            "deviceType": self.__amzn["deviceType"],
-            "deviceId": self.__amzn["deviceId"],
-            "customerId": self.__amzn["customerId"]
-        }
-
-        api_check = requests.post("https://music.amazon.co.uk/cirrus/v3/", headers=headers, json=data)
-
-        if not api_check.status_code == 200:
-            self.__possibly_outdated("Test request to %s failed." % self.__name, authDialog)
+        if not api_check or not api_check.status_code == 200:
+            self.__possibly_outdated("Test request to %s failed." % self.__name, None)
+            self.__authenticated = False
             waitMsg.close()
             authDialog.reject()
             return None
 
-        self.__authenticated = True
         waitMsg.close()
         authDialog.accept()
 
@@ -250,25 +276,8 @@ class Plugin(plugins.Plugin):
         return True if authDialog.exec() == QDialog.Accepted else False
 
     def getPlaylists(self):
-        headers = {
-            'Content-Type': 'application/json',
-            'Content-Encoding': 'amz-1.0',
-            'X-Amz-Target': 'com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary',
-            'Cookie': '%s=%s; %s=%s' % (self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
-            'csrf-rnd': self.__amzn["csrf_rnd"],
-            'csrf-token': self.__amzn["csrf_token"],
-            'csrf-ts': self.__amzn["csrf_ts"]
-        }
-
-        data = {
-            "clientActionList": [],
-            "deviceType": self.__amzn["deviceType"],
-            "deviceId": self.__amzn["deviceId"],
-            "customerId": self.__amzn["customerId"]
-        }
-
         # TODO fix domain
-        playlists_request = requests.post("https://music.amazon.co.uk/cloudplayer/playlists/", headers=headers, json=data)
+        playlists_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary")
         amznPlaylists = json.loads(playlists_request.text)
 
         # Add history playlist
