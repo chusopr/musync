@@ -3,6 +3,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QPixmap
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
+from urllib.parse import urlparse
 import requests, plugins, json
 
 # Sorry for the mess...
@@ -55,6 +56,7 @@ class Plugin(plugins.Plugin):
     __webdriver = None
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
+    __domain = "music.amazon.com"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
     __chromedriver_path = "/usr/lib/chromium-browser/chromedriver"
 
@@ -108,7 +110,7 @@ class Plugin(plugins.Plugin):
             "customerId": self.__amzn["customerId"]
         }}
 
-        r = requests.post("https://music.amazon.co.uk/%s" % endpoint, headers=headers, json=data)
+        r = requests.post("https://%s/%s" % (self.__domain, endpoint), headers=headers, json=data)
 
         if (r.status_code == 401):
             return self.__request(endpoint, target, data, headers, True)
@@ -221,6 +223,9 @@ class Plugin(plugins.Plugin):
         for cookie in self.__webdriver.get_cookies():
             self.__cookies[cookie["name"]] = cookie["value"]
 
+        music_url = urlparse(self.__webdriver.current_url)
+        self.__domain = music_url.hostname
+
         self.__webdriver.quit()
         self.__webdriver = None
         self.__authenticated = True
@@ -276,7 +281,6 @@ class Plugin(plugins.Plugin):
         return True if authDialog.exec() == QDialog.Accepted else False
 
     def getPlaylists(self):
-        # TODO fix domain
         playlists_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary")
         amznPlaylists = json.loads(playlists_request.text)
 
