@@ -17,6 +17,29 @@ class MainWindow(QMainWindow):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus plugin", plugin_name + " plugin is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
+    def __playlist_select(self, source_name):
+        current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
+
+        # No playlist actually selected
+        if current_playlist == None:
+            return
+
+        # Get tracks for the current playlist
+        tracks = self.__sources[source_name].getTracks(current_playlist)
+        # No tracks returned for the current playlist. Do nothing.
+        # TODO Should we do something? Maybe show an error message
+        if not tracks:
+            return
+
+        # Add tracks to the tracklist in the main window
+        trackList = self.findChild(QListWidget, source_name + "Tracklist")
+        # Remove any entry from the previous playlist first
+        while trackList.count() > 0:
+            trackList.takeItem(0)
+        # Now add the tracks
+        for t in tracks:
+            QListWidgetItem("%s - %s" % (t["artist"], t["title"]), trackList).track = t
+
     def __change_source(self, source_name, sourceDialog, sourcesList, sourceName):
         plugin_name = sourcesList.currentItem().text()
         plugin_slug = sourcesList.currentItem().slug
@@ -31,7 +54,7 @@ class MainWindow(QMainWindow):
             self.__bogus_plugin(plugin_name)
             return
         self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + plugin_name)
-        self.__sources[sourceName] = plugin_slug
+        self.__sources[sourceName] = plugins.plugins[plugin_slug]
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
         playlistSelect.addItem("")
         for playlist in playlists:
@@ -79,6 +102,7 @@ class MainWindow(QMainWindow):
         selectedSourceLayout.addWidget(playlistLabel)
         playlistSelect = QComboBox()
         playlistSelect.setObjectName(source_name + "Playlist")
+        playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(source_name))
         selectedSourceLayout.addWidget(playlistSelect, 1)
         sourceLayout.addLayout(selectedSourceLayout)
 

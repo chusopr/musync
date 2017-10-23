@@ -20,6 +20,10 @@ class Plugin(ABC):
     def getPlaylists(self):
         pass
 
+    @abstractmethod
+    def getTracks(self, playlist):
+        pass
+
     def isAuthenticated(self):
         try:
             return self.__authenticated

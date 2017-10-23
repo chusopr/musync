@@ -295,3 +295,45 @@ class Plugin(plugins.Plugin):
             playlists.append(playlist)
 
         return playlists
+
+    def getTracks(self, playlist):
+        # FIXME: add support for "My Music"
+        data = {
+            "playlistIds": [playlist],
+            "requestedMetadata": [
+                "albumArtistName",
+                "albumName",
+                "albumReleaseDate",
+                "artistName",
+                "duration",
+                "sortAlbumArtistName",
+                "sortAlbumName",
+                "sortArtistName",
+                "sortTitle",
+                "title"
+            ]
+        }
+        tracks_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getPlaylistsByIdV2", data)
+
+        if tracks_request.status_code != 200:
+            return False
+
+        playlist = json.loads(tracks_request.text)
+
+        if not playlist or playlist["errors"] or not playlist["playlists"]:
+            return False
+
+        tracks = []
+        for t in playlist["playlists"][0]["tracks"]:
+            d = t["metadata"]["requestedMetadata"]
+            track = {}
+            track["disc"]     = d["discNum"]      if "discNum"      in d else ""
+            track["track"]    = d["trackNum"]     if "trackNum"     in d else ""
+            track["artist"]   = d["artistName"]   if "artistName"   in d and d["artistName"] != "Unknown Artist" else ""
+            track["title"]    = d["title"]        if "title"        in d else ""
+            track["duration"] = d["duration"]     if "duration"     in d else ""
+            track["album"]    = d["albumName"]    if "albumName"    in d and d["albumName"] != "Unknown Album" else ""
+            track["genre"]    = d["primaryGenre"] if "primaryGenre" in d and d["primaryGenre"] != "Unknown Genre" else ""
+            tracks.append(track)
+
+        return tracks
