@@ -48,17 +48,54 @@ class CaptchaForm(QDialog):
     def get_response(self):
         return self.__captcha_response
 
+class OtpForm(QDialog):
+    __otp_response = None
+
+    def __init__(self, msg):
+        super().__init__()
+
+        windowLayout = QVBoxLayout(self)
+
+        if msg != "":
+            windowLayout.addWidget(QLabel(msg))
+
+        formLayout = QHBoxLayout()
+
+        formLayout.addWidget(QLabel("Insert one-time password received via text message (SMS) or authenticator app:"))
+        otpInput = QLineEdit(self)
+        formLayout.addWidget(otpInput)
+        windowLayout.addLayout(formLayout)
+
+        buttonBox = QDialogButtonBox(self);
+        buttonBox.setOrientation(Qt.Horizontal)
+        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok);
+
+        windowLayout.addWidget(buttonBox);
+
+        buttonBox.accepted.connect(lambda: self.__set_response(otpInput.text()))
+        buttonBox.rejected.connect(self.reject)
+
+        self.setWindowTitle('One-time password required')
+
+    def __set_response(self, text):
+        self.__otp_response = text
+        self.accept()
+
+    def get_response(self):
+        return self.__otp_response
+
 class Plugin(plugins.Plugin):
     __name = "Amazon Music"
     __authenticated = False
     __cookies = {}
     __amzn = {}
     __webdriver = None
+    __session = requests.Session()
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     __domain = "music.amazon.com"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
-    __chromedriver_path = "/usr/lib/chromium-browser/chromedriver"
+    __chromedriver_path = "/usr/bin/chromedriver"
 
     def __http_debug(self):
         import http.client as http_client
@@ -80,16 +117,12 @@ class Plugin(plugins.Plugin):
             self.__authenticated and
             type(self.__cookies) is dict and
             type(self.__amzn)    is dict and
-            "atCookieName"   in self.__amzn and
-            "ubidCookieName" in self.__amzn and
             "csrf_rnd"       in self.__amzn and
             "csrf_token"     in self.__amzn and
             "csrf_ts"        in self.__amzn and
             "deviceType"     in self.__amzn and
             "deviceId"       in self.__amzn and
-            "customerId"     in self.__amzn and
-            self.__amzn["atCookieName"]   in self.__cookies and
-            self.__amzn["ubidCookieName"] in self.__cookies
+            "customerId"     in self.__amzn
         ):
             if not self.authenticate(window=None, force=True):
                 return None
@@ -98,7 +131,6 @@ class Plugin(plugins.Plugin):
             'Content-Type': 'application/json',
             'Content-Encoding': 'amz-1.0',
             'X-Amz-Target': target,
-            'Cookie': '%s=%s; %s=%s' % (self.__amzn["atCookieName"], self.__cookies[self.__amzn["atCookieName"]], self.__amzn["ubidCookieName"], self.__cookies[self.__amzn["ubidCookieName"]]),
             'csrf-rnd': self.__amzn["csrf_rnd"],
             'csrf-token': self.__amzn["csrf_token"],
             'csrf-ts': self.__amzn["csrf_ts"]
@@ -110,7 +142,7 @@ class Plugin(plugins.Plugin):
             "customerId": self.__amzn["customerId"]
         }}
 
-        r = requests.post("https://%s/%s" % (self.__domain, endpoint), headers=headers, json=data)
+        r = self.__session.post("https://%s/%s" % (self.__domain, endpoint), headers=headers, json=data)
 
         if (r.status_code == 401):
             return self.__request(endpoint, target, data, headers, True)
@@ -157,6 +189,41 @@ class Plugin(plugins.Plugin):
             return False
         except NoSuchElementException:
             pass
+
+        otp_error = ""
+        try:
+            otp = self.__webdriver.find_element_by_id('auth-mfa-otpcode')
+        except NoSuchElementException:
+            pass
+
+        while otp:
+            # Show OTP query form
+            otpForm = OtpForm(otp_error)
+            otpForm.exec()
+            # User aborted? Finish
+            if not otpForm.get_response():
+                return False
+            # Input OTP details
+            otp.clear()
+            otp.send_keys(otpForm.get_response())
+
+            # Submit OTP form
+            otp.submit()
+            # Check if we are asked for the OTP again
+            # meaning the provided one is not valid
+            otp = False
+            try:
+                otp = self.__webdriver.find_element_by_id('auth-mfa-otpcode')
+            except NoSuchElementException:
+                pass
+            # If we are asked again for the OTP, try to get the error message
+            # to return it to the user
+            if otp:
+                try:
+                    otp_error_box = self.__webdriver.find_element_by_id('auth-error-message-box')
+                    otp_error = otp_error_box.find_element_by_tag_name("span").text
+                except NoSuchElementException:
+                    pass
 
         # We only test for a redirect once
         if not redirected:
@@ -212,9 +279,9 @@ class Plugin(plugins.Plugin):
             'deviceId'  :     self.__webdriver.execute_script("return amznMusic.appConfig.deviceId;"),
             'customerId':     self.__webdriver.execute_script("return amznMusic.appConfig.customerId;"),
             'deviceType':     self.__webdriver.execute_script("return amznMusic.appConfig.deviceType;"),
-            'csrf_rnd'  :     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_rnd;"),
-            'csrf_ts'   :     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_ts;"),
-            'csrf_token':     self.__webdriver.execute_script("return amznMusic.appConfig.CSRFTokenConfig.csrf_token;"),
+            'csrf_rnd'  :     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.rnd;"),
+            'csrf_ts'   :     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.ts;"),
+            'csrf_token':     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.token;"),
             'atCookieName':   self.__webdriver.execute_script("return amznMusic.appConfig.atCookieName;"),
             'ubidCookieName': self.__webdriver.execute_script("return amznMusic.appConfig.ubidCookieName;")
         }
@@ -222,6 +289,7 @@ class Plugin(plugins.Plugin):
         self.__cookies = {}
         for cookie in self.__webdriver.get_cookies():
             self.__cookies[cookie["name"]] = cookie["value"]
+        requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
 
         music_url = urlparse(self.__webdriver.current_url)
         self.__domain = music_url.hostname
