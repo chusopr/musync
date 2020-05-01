@@ -8,10 +8,14 @@ ModuleMain = "__init__"
 class Plugin(ABC):
 
     def __init__(self):
+        self.__id = re.sub(r"%s." % PluginsFolder, "", self.__module__)
         try:
             self.__name
         except AttributeError:
-            self.__name = re.sub(r"%s." % PluginsFolder, "", self.__module__)
+            self.__name = self.__id
+
+    def getId(self):
+        return self.__id
 
     def getName(self):
         return self.__name

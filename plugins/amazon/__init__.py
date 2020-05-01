@@ -5,6 +5,8 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from urllib.parse import urlparse
 import requests, plugins, json
+from appdirs import user_cache_dir
+import os
 
 # Sorry for the mess...
 
@@ -85,6 +87,7 @@ class OtpForm(QDialog):
         return self.__otp_response
 
 class Plugin(plugins.Plugin):
+    __id = "amazon"
     __name = "Amazon Music"
     __authenticated = False
     __cookies = {}
@@ -96,6 +99,29 @@ class Plugin(plugins.Plugin):
     __domain = "music.amazon.com"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
     __chromedriver_path = "/usr/bin/chromedriver"
+    __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
+
+    def __init__(self):
+        super().__init__()
+
+        if (os.path.isfile(self.__session_file)):
+            try:
+                with open(self.__session_file, "r") as f:
+                    self.__domain, self.__cookies, self.__amzn = json.load(f)
+                requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
+                self.__authenticated = True
+
+            except Exception as e:
+                print("Need to re-authenticate: {}".format(str(e)))
+
+    def __save_cache(self):
+        try:
+            self.__cookies = requests.utils.dict_from_cookiejar(self.__session.cookies)
+            os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
+            with open(self.__session_file, "w") as f:
+                json.dump([self.__domain, self.__cookies, self.__amzn], f)
+        except Exception as e:
+            print("Failed to cache session data: {}".format(str(e)))
 
     def __http_debug(self):
         import http.client as http_client
@@ -178,6 +204,12 @@ class Plugin(plugins.Plugin):
             # A CAPTCHA resets the redirect detector
             redirected = False
 
+        try:
+            rememberMe_checkbox = self.__webdriver.find_element_by_name("rememberMe")
+            if not rememberMe_checkbox.is_selected():
+                rememberMe_checkbox.click()
+        except NoSuchElementException:
+            pass
         passInput.submit()
 
         try:
@@ -206,6 +238,14 @@ class Plugin(plugins.Plugin):
             # Input OTP details
             otp.clear()
             otp.send_keys(otpForm.get_response())
+            # Try to check the box to not ask for OTP again
+            # Ignore it if it fails
+            try:
+                otpRemember_checkbox = self.__webdriver.find_element_by_id("auth-mfa-remember-device")
+                if not otpRemember_checkbox.is_selected():
+                    otpRemember_checkbox.click()
+            except NoSuchElementException:
+                pass
 
             # Submit OTP form
             otp.submit()
@@ -293,6 +333,8 @@ class Plugin(plugins.Plugin):
 
         music_url = urlparse(self.__webdriver.current_url)
         self.__domain = music_url.hostname
+
+        self.__save_cache()
 
         self.__webdriver.quit()
         self.__webdriver = None
