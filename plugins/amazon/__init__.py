@@ -361,6 +361,17 @@ class Plugin(plugins.Plugin):
             self.__webdriver.quit()
             self.__webdriver = None
 
+    def __track_metadata(self, d):
+        track = {}
+        track["disc"]     = d["discNum"]      if "discNum"      in d else ""
+        track["track"]    = d["trackNum"]     if "trackNum"     in d else ""
+        track["artist"]   = d["artistName"]   if "artistName"   in d and d["artistName"] != "Unknown Artist" else ""
+        track["title"]    = d["title"]        if "title"        in d else ""
+        track["duration"] = d["duration"]     if "duration"     in d else ""
+        track["album"]    = d["albumName"]    if "albumName"    in d and d["albumName"] != "Unknown Album" else ""
+        track["genre"]    = d["primaryGenre"] if "primaryGenre" in d and d["primaryGenre"] != "Unknown Genre" else ""
+        return track
+
     def authenticate(self, window, force=False):
         if self.__authenticated and not force:
             return True
@@ -411,43 +422,81 @@ class Plugin(plugins.Plugin):
         return playlists
 
     def getTracks(self, playlist):
-        # FIXME: add support for "My Music"
-        data = {
-            "playlistIds": [playlist],
-            "requestedMetadata": [
-                "albumArtistName",
-                "albumName",
-                "albumReleaseDate",
-                "artistName",
-                "duration",
-                "sortAlbumArtistName",
-                "sortAlbumName",
-                "sortArtistName",
-                "sortTitle",
-                "title"
-            ]
-        }
-        tracks_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getPlaylistsByIdV2", data)
-
-        if tracks_request.status_code != 200:
-            return False
-
-        playlist = json.loads(tracks_request.text)
-
-        if not playlist or playlist["errors"] or not playlist["playlists"]:
-            return False
-
         tracks = []
-        for t in playlist["playlists"][0]["tracks"]:
-            d = t["metadata"]["requestedMetadata"]
-            track = {}
-            track["disc"]     = d["discNum"]      if "discNum"      in d else ""
-            track["track"]    = d["trackNum"]     if "trackNum"     in d else ""
-            track["artist"]   = d["artistName"]   if "artistName"   in d and d["artistName"] != "Unknown Artist" else ""
-            track["title"]    = d["title"]        if "title"        in d else ""
-            track["duration"] = d["duration"]     if "duration"     in d else ""
-            track["album"]    = d["albumName"]    if "albumName"    in d and d["albumName"] != "Unknown Album" else ""
-            track["genre"]    = d["primaryGenre"] if "primaryGenre" in d and d["primaryGenre"] != "Unknown Genre" else ""
-            tracks.append(track)
+        if playlist == 'my-music':
+            data = {
+                'maxResults': '100',
+                'nextResultsToken': '',
+                'Operation': 'selectTrackMetadata',
+                'selectedColumns.member.1': 'albumArtistName',
+                'selectedColumns.member.2': 'albumName',
+                'selectedColumns.member.3': 'albumReleaseDate',
+                'selectedColumns.member.4': 'artistName',
+                'selectedColumns.member.5': 'duration',
+                'selectedColumns.member.6': 'name',
+                'selectedColumns.member.7': 'sortAlbumArtistName',
+                'selectedColumns.member.8': 'sortAlbumName',
+                'selectedColumns.member.9': 'sortArtistName',
+                'selectedColumns.member.10': 'sortTitle',
+                'selectedColumns.member.1': 'title',
+                'selectCriteriaList.member.1.attributeName': 'status',
+                'selectCriteriaList.member.1.comparisonType': 'EQUALS',
+                'selectCriteriaList.member.1.attributeValue': 'AVAILABLE',
+                'ContentType': 'JSON',
+                'customerInfo.customerId': self.__amzn["customerId"],
+                'customerInfo.deviceId': self.__amzn["deviceId"],
+                'customerInfo.deviceType': self.__amzn["deviceType"]
+            }
+            headers = {
+                'csrf-rnd': self.__amzn["csrf_rnd"],
+                'csrf-token': self.__amzn["csrf_token"],
+                'csrf-ts': self.__amzn["csrf_ts"]
+            }
+            tracks_request = self.__session.post("https://music.amazon.co.uk/cirrus/", data=data, headers=headers)
+
+            if tracks_request.status_code != 200:
+                return False
+            playlist = json.loads(tracks_request.text)
+
+            if (
+                    "selectTrackMetadataResponse" not in playlist or
+                    "selectTrackMetadataResult" not in playlist["selectTrackMetadataResponse"] or
+                    "trackInfoList" not in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]
+               ):
+                return False
+
+            for t in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]["trackInfoList"]:
+                tracks.append(self.__track_metadata(t["metadata"]))
+
+        else:
+            data = {
+                "playlistIds": [playlist],
+                "requestedMetadata": [
+                    "albumArtistName",
+                    "albumName",
+                    "albumReleaseDate",
+                    "artistName",
+                    "duration",
+                    "sortAlbumArtistName",
+                    "sortAlbumName",
+                    "sortArtistName",
+                    "sortTitle",
+                    "title"
+                ]
+            }
+            tracks_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getPlaylistsByIdV2", data)
+
+            if tracks_request.status_code != 200:
+                return False
+
+            playlist = json.loads(tracks_request.text)
+
+            if not playlist or playlist["errors"] or not playlist["playlists"]:
+                return False
+
+            tracklist = playlist["playlists"][0]["tracks"]
+
+            for t in tracklist:
+                tracks.append(self.__track_metadata(t["metadata"]["requestedMetadata"]))
 
         return tracks
