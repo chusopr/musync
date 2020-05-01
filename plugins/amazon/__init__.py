@@ -291,8 +291,9 @@ class Plugin(plugins.Plugin):
 
         if login_result == None:
             waitMsg.close()
-            self.__webdriver.quit()
-            self.__webdriver = None
+            if self.__webdriver is not None:
+                self.__webdriver.quit()
+                self.__webdriver = None
             self.__possibly_outdated("It was not possible to authenticate to %s." % self.__name, authDialog)
             authDialog.reject()
             return login_result
@@ -310,8 +311,9 @@ class Plugin(plugins.Plugin):
         if not amznExists:
             # Should we allow the user to try again with different credentials?
             waitMsg.close()
-            self.__webdriver.quit()
-            self.__webdriver = None
+            if self.__webdriver is not None:
+                self.__webdriver.quit()
+                self.__webdriver = None
             authDialog.reject()
             return None
 
@@ -336,8 +338,9 @@ class Plugin(plugins.Plugin):
 
         self.__save_cache()
 
-        self.__webdriver.quit()
-        self.__webdriver = None
+        if self.__webdriver is not None:
+            self.__webdriver.quit()
+            self.__webdriver = None
         self.__authenticated = True
 
         api_check = self.__request("cirrus/v3/", "com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions", data={"clientActionList": []})
@@ -354,8 +357,9 @@ class Plugin(plugins.Plugin):
 
     def __reject_auth(self, authDialog):
         authDialog.reject()
-        self.__webdriver.quit()
-        self.__webdriver = None
+        if self.__webdriver is not None:
+            self.__webdriver.quit()
+            self.__webdriver = None
 
     def authenticate(self, window, force=False):
         if self.__authenticated and not force:
