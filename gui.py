@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem
 from PyQt5.QtCore import QCoreApplication, Qt
-from PyQt5.QtGui import QIcon
-import re, modules
+from PyQt5.QtGui import QIcon, QColor
+import re, modules, icu
 
 class MainWindow(QMainWindow):
     __sources = {
@@ -17,7 +17,39 @@ class MainWindow(QMainWindow):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
+    def __compare_playlists(self):
+        lList = self.findChild(QListWidget, "leftTracklist")
+        rList = self.findChild(QListWidget, "rightTracklist")
+
+        for i in range(lList.count()):
+            l = lList.item(i)
+            found = False
+            for j in range(rList.count()):
+                r = rList.item(j)
+                # TODO make regexp configurable
+                if re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(l.text()), flags=re.IGNORECASE).lower() == re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(r.text()), flags=re.IGNORECASE).lower():
+                    found = True
+                    l.setForeground(QColor(0, 127, 0))
+                    r.setForeground(QColor(0, 127, 0))
+                    l.track["peer"] = j
+                    r.track["peer"] = i
+                    break
+            if not found:
+                l.setForeground(QColor(127, 0, 0))
+
+        for i in range(rList.count()):
+            r = rList.item(i)
+            if r.foreground() != QColor(0, 127, 0):
+                r.setForeground(QColor(127, 0, 0))
+
     def __playlist_select(self, source_name):
+        # Remove links in the other tracklist to the ones in this one being removed
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if source_name is "left" else "left"))
+        for i in range(otherList.count()):
+            peer = otherList.item(i)
+            if "peer" in peer.track:
+                del peer.track["peer"]
+
         current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
 
         # No playlist actually selected
@@ -39,6 +71,10 @@ class MainWindow(QMainWindow):
         # Now add the tracks
         for t in tracks:
             QListWidgetItem("%s - %s" % (t["artist"], t["title"]), trackList).track = t
+
+        # Check if the other playlist is also set to compare both
+        if self.findChild(QComboBox, "{}Playlist".format("left" if source_name == "right" else "right")).currentData() is not None:
+            self.__compare_playlists()
 
     def __change_source(self, source_name, sourceDialog, sourcesList, sourceName):
         module_name = sourcesList.currentItem().text()
@@ -90,6 +126,19 @@ class MainWindow(QMainWindow):
         sourcesList.itemDoubleClicked.connect(lambda: self.__change_source(source_name, sourceDialog, sourcesList, sourceName))
         sourceDialog.show()
 
+    def __track_select(self, item):
+        # If this track doesn't have a peer in the other tracklist, just finish
+        if 'peer' not in item.track:
+            return
+
+        # Get this track's peer in the other tracklist and select it
+        thisList = item.listWidget()
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
+
+        otherItem = otherList.item(item.track["peer"])
+        otherItem.setSelected(True)
+        otherList.scrollToItem(otherItem)
+
     def __create_source_layout(self, source_name):
         sourceLayout = QVBoxLayout()
         selectedSourceLayout = QHBoxLayout()
@@ -113,6 +162,7 @@ class MainWindow(QMainWindow):
 
         trackList = QListWidget()
         trackList.setObjectName(source_name + "Tracklist")
+        trackList.itemClicked.connect(self.__track_select)
         sourceLayout.addWidget(trackList)
         return (sourceLayout, playlistSelect, trackList, changeSourceBtn)
 
