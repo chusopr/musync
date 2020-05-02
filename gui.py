@@ -60,6 +60,8 @@ class MainWindow(QMainWindow):
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist["id"])
         sourceDialog.close()
+        playlistSelect.setDisabled(False)
+        self.findChild(QLabel, source_name + "PlaylistLabel").setDisabled(False)
 
     def __source_select(self, source_name):
         sources = plugins.listAll()
@@ -99,8 +101,11 @@ class MainWindow(QMainWindow):
         changeSourceBtn.clicked.connect(lambda: self.__source_select(source_name))
         selectedSourceLayout.addWidget(changeSourceBtn)
         playlistLabel = QLabel("Selected playlist:")
+        playlistLabel.setObjectName(source_name + "PlaylistLabel")
+        playlistLabel.setDisabled(True)
         selectedSourceLayout.addWidget(playlistLabel)
         playlistSelect = QComboBox()
+        playlistSelect.setDisabled(True)
         playlistSelect.setObjectName(source_name + "Playlist")
         playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(source_name))
         selectedSourceLayout.addWidget(playlistSelect, 1)
