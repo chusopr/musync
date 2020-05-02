@@ -4,7 +4,7 @@ from PyQt5.QtGui import QPixmap
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException
 from urllib.parse import urlparse
-import requests, plugins, json
+import requests, modules, json
 from appdirs import user_cache_dir
 import os
 
@@ -86,7 +86,7 @@ class OtpForm(QDialog):
     def get_response(self):
         return self.__otp_response
 
-class Plugin(plugins.Plugin):
+class SourceModule(modules.SourceModule):
     __id = "amazon"
     __name = "Amazon Music"
     __authenticated = False
@@ -134,7 +134,7 @@ class Plugin(plugins.Plugin):
         requests_log.propagate = True
 
     def __possibly_outdated(self, message, window):
-        errorMsg = QMessageBox(QMessageBox.Critical, "%s plugin failed" % self.__name, "%s\nTheir site may have changed and this plugin may be outdated. Please check for updates." % message, QMessageBox.Ok, window)
+        errorMsg = QMessageBox(QMessageBox.Critical, "%s module failed" % self.__name, "%s\nTheir site may have changed and this module may be outdated. Please check for updates." % message, QMessageBox.Ok, window)
         errorMsg.setModal(True)
         errorMsg.show()
 

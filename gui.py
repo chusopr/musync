@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QIcon
-import re, plugins
+import re, modules
 
 class MainWindow(QMainWindow):
     __sources = {
@@ -13,8 +13,8 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.buildUI()
 
-    def __bogus_plugin(self, plugin_name):
-        errorMsg = QMessageBox(QMessageBox.Critical, "Bogus plugin", plugin_name + " plugin is not working properly", QMessageBox.Ok, self)
+    def __bogus_module(self, module_name):
+        errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
     def __playlist_select(self, source_name):
@@ -41,20 +41,20 @@ class MainWindow(QMainWindow):
             QListWidgetItem("%s - %s" % (t["artist"], t["title"]), trackList).track = t
 
     def __change_source(self, source_name, sourceDialog, sourcesList, sourceName):
-        plugin_name = sourcesList.currentItem().text()
-        plugin_slug = sourcesList.currentItem().slug
-        if not plugin_slug in plugins.plugins:
-            self.__bogus_plugin(plugin_name)
+        module_name = sourcesList.currentItem().text()
+        module_slug = sourcesList.currentItem().slug
+        if not module_slug in modules.modules:
+            self.__bogus_module(module_name)
             return
-        source = plugins.plugins[plugin_slug]
+        source = modules.modules[module_slug]
         if not source.isAuthenticated() and not source.authenticate(self):
             return False
         playlists = source.getPlaylists()
         if not playlists or len(playlists) == 0:
-            self.__bogus_plugin(plugin_name)
+            self.__bogus_module(module_name)
             return
-        self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + plugin_name)
-        self.__sources[sourceName] = plugins.plugins[plugin_slug]
+        self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + module_name)
+        self.__sources[sourceName] = modules.modules[module_slug]
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
         playlistSelect.addItem("")
         for playlist in playlists:
@@ -64,9 +64,9 @@ class MainWindow(QMainWindow):
         self.findChild(QLabel, source_name + "PlaylistLabel").setDisabled(False)
 
     def __source_select(self, source_name):
-        sources = plugins.listAll()
+        sources = modules.listAll()
         if len(sources) == 0:
-            errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source plugins found", QMessageBox.Ok, self)
+            errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source modules found", QMessageBox.Ok, self)
             errorMsg.show()
             return
         sourceName = re.sub(r"SourceBtn$", "", self.sender().objectName())
