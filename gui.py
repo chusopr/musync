@@ -130,7 +130,7 @@ class MainWindow(QMainWindow):
         rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
         mainLayout.addLayout(rightLayout)
 
-        windowLayout.addLayout(mainLayout)
+        windowLayout.addLayout(mainLayout, 1)
 
         buttonsWidget = QWidget()
         buttonsLayout = QHBoxLayout(buttonsWidget)
@@ -142,7 +142,7 @@ class MainWindow(QMainWindow):
         exitBtn = QPushButton(QIcon.fromTheme("window-close"), "Quit")
         exitBtn.clicked.connect(QCoreApplication.instance().quit)
         buttonsLayout.addWidget(exitBtn, 1, Qt.AlignRight)
-        windowLayout.addWidget(buttonsWidget, 1, Qt.AlignRight)
+        windowLayout.addWidget(buttonsWidget, 0, Qt.AlignRight)
 
         # Build menu bar
         mainMenu = QMenuBar(self)
