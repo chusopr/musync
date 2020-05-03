@@ -8,8 +8,6 @@ import requests, modules, json
 from appdirs import user_cache_dir
 import os
 
-# Sorry for the mess...
-
 class CaptchaForm(QDialog):
     __captcha_response = None
 
@@ -424,49 +422,56 @@ class SourceModule(modules.SourceModule):
     def getTracks(self, playlist):
         tracks = []
         if playlist == 'my-music':
-            data = {
-                'maxResults': '100',
-                'nextResultsToken': '',
-                'Operation': 'selectTrackMetadata',
-                'selectedColumns.member.1': 'albumArtistName',
-                'selectedColumns.member.2': 'albumName',
-                'selectedColumns.member.3': 'albumReleaseDate',
-                'selectedColumns.member.4': 'artistName',
-                'selectedColumns.member.5': 'duration',
-                'selectedColumns.member.6': 'name',
-                'selectedColumns.member.7': 'sortAlbumArtistName',
-                'selectedColumns.member.8': 'sortAlbumName',
-                'selectedColumns.member.9': 'sortArtistName',
-                'selectedColumns.member.10': 'sortTitle',
-                'selectedColumns.member.1': 'title',
-                'selectCriteriaList.member.1.attributeName': 'status',
-                'selectCriteriaList.member.1.comparisonType': 'EQUALS',
-                'selectCriteriaList.member.1.attributeValue': 'AVAILABLE',
-                'ContentType': 'JSON',
-                'customerInfo.customerId': self.__amzn["customerId"],
-                'customerInfo.deviceId': self.__amzn["deviceId"],
-                'customerInfo.deviceType': self.__amzn["deviceType"]
-            }
-            headers = {
-                'csrf-rnd': self.__amzn["csrf_rnd"],
-                'csrf-token': self.__amzn["csrf_token"],
-                'csrf-ts': self.__amzn["csrf_ts"]
-            }
-            tracks_request = self.__session.post("https://music.amazon.co.uk/cirrus/", data=data, headers=headers)
+            nextResultsToken = 0
+            while nextResultsToken is not None:
+                data = {
+                    'maxResults': '100',
+                    'nextResultsToken': nextResultsToken,
+                    'Operation': 'selectTrackMetadata',
+                    'selectedColumns.member.1': 'albumArtistName',
+                    'selectedColumns.member.2': 'albumName',
+                    'selectedColumns.member.3': 'albumReleaseDate',
+                    'selectedColumns.member.4': 'artistName',
+                    'selectedColumns.member.5': 'duration',
+                    'selectedColumns.member.6': 'name',
+                    'selectedColumns.member.7': 'sortAlbumArtistName',
+                    'selectedColumns.member.8': 'sortAlbumName',
+                    'selectedColumns.member.9': 'sortArtistName',
+                    'selectedColumns.member.10': 'sortTitle',
+                    'selectedColumns.member.1': 'title',
+                    'selectCriteriaList.member.1.attributeName': 'status',
+                    'selectCriteriaList.member.1.comparisonType': 'EQUALS',
+                    'selectCriteriaList.member.1.attributeValue': 'AVAILABLE',
+                    'ContentType': 'JSON',
+                    'customerInfo.customerId': self.__amzn["customerId"],
+                    'customerInfo.deviceId': self.__amzn["deviceId"],
+                    'customerInfo.deviceType': self.__amzn["deviceType"]
+                }
+                headers = {
+                    'csrf-rnd': self.__amzn["csrf_rnd"],
+                    'csrf-token': self.__amzn["csrf_token"],
+                    'csrf-ts': self.__amzn["csrf_ts"]
+                }
+                tracks_request = self.__session.post("https://music.amazon.co.uk/cirrus/", data=data, headers=headers)
 
-            if tracks_request.status_code != 200:
-                return False
-            playlist = json.loads(tracks_request.text)
+                if tracks_request.status_code != 200:
+                    return False
+                playlist = json.loads(tracks_request.text)
 
-            if (
-                    "selectTrackMetadataResponse" not in playlist or
-                    "selectTrackMetadataResult" not in playlist["selectTrackMetadataResponse"] or
-                    "trackInfoList" not in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]
-               ):
-                return False
+                if (
+                        "selectTrackMetadataResponse" not in playlist or
+                        "selectTrackMetadataResult" not in playlist["selectTrackMetadataResponse"] or
+                        "trackInfoList" not in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]
+                ):
+                    return False
 
-            for t in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]["trackInfoList"]:
-                tracks.append(self.__track_metadata(t["metadata"]))
+                for t in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]["trackInfoList"]:
+                    tracks.append(self.__track_metadata(t["metadata"]))
+
+                if "nextResultsToken" in playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]:
+                    nextResultsToken = playlist["selectTrackMetadataResponse"]["selectTrackMetadataResult"]["nextResultsToken"]
+                else:
+                    nextResultsToken = None
 
         else:
             data = {
