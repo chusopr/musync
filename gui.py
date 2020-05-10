@@ -1,7 +1,8 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar
+from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QIcon, QColor
-import re, modules, icu, threading
+from datetime import datetime
+import re, modules, icu, threading, cgi
 
 class MainWindow(QMainWindow):
     __sources = {
@@ -13,6 +14,7 @@ class MainWindow(QMainWindow):
         "right": None,
         "compare": None
     }
+    __log = None
 
     def __init__(self):
         super().__init__()
@@ -40,9 +42,24 @@ class MainWindow(QMainWindow):
                     r.setForeground(QColor(0, 127, 0))
                     l.track["peer"] = j
                     r.track["peer"] = i
+                    self.__status_updated('Song <span style="color: #00be00">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> found as <span style="color: #00be00">{}</span> in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                        cgi.escape(l.text()),
+                        cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
+                        cgi.escape(self.__sources["left"].getName()),
+                        cgi.escape(r.text()),
+                        cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
+                        cgi.escape(self.__sources["right"].getName())
+                    ), False)
                     break
             if not found:
                 l.setForeground(QColor(127, 0, 0))
+                self.__status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                    cgi.escape(l.text()),
+                    cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
+                    cgi.escape(self.__sources["left"].getName()),
+                    cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
+                    cgi.escape(self.__sources["right"].getName())
+                ), False)
 
         self.statusBar().showMessage("Finished comparing tracks.")
 
@@ -50,6 +67,13 @@ class MainWindow(QMainWindow):
             r = rList.item(i)
             if r.foreground() != QColor(0, 127, 0):
                 r.setForeground(QColor(127, 0, 0))
+                self.__status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                    cgi.escape(r.text()),
+                    cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
+                    cgi.escape(self.__sources["right"].getName()),
+                    cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
+                    cgi.escape(self.__sources["left"].getName())
+                ), False)
 
     def __load_tracks(self, source_name):
         current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
@@ -197,6 +221,17 @@ class MainWindow(QMainWindow):
         errorMsg = QMessageBox(QMessageBox.Warning, "No sources selected", "OK first", QMessageBox.Ok, self)
         errorMsg.show()
 
+    def __status_updated(self, msg, escape=True):
+        if self.__log is not None:
+            log = self.__log.findChild(QTextBrowser, "log")
+            log.append('<span style="color: #bebebe">{} - </span>{}'.format(datetime.now(), cgi.escape(msg) if escape else msg))
+            if self.__log.findChild(QCheckBox, "autoscroll").isChecked():
+                log.verticalScrollBar().setValue(log.verticalScrollBar().maximum())
+
+    def __copy_log(self):
+        self.__log.findChild(QTextBrowser, "log").selectAll()
+        self.__log.findChild(QTextBrowser, "log").copy()
+
     def buildUI(self):
         centralWidget = QWidget(self)
         windowLayout = QVBoxLayout(centralWidget)
@@ -220,6 +255,31 @@ class MainWindow(QMainWindow):
         buttonsLayout.addWidget(exitBtn, 1, Qt.AlignRight)
         windowLayout.addWidget(buttonsWidget, 0, Qt.AlignRight)
 
+        self.__log = QDialog(self)
+        self.__log.resize(540, 250)
+        self.__log.setModal(False)
+        logLayout = QVBoxLayout(self.__log)
+        logBrowser = QTextBrowser()
+        logBrowser.setObjectName("log")
+        logBrowser.setAcceptRichText(True)
+        logBrowser.setReadOnly(True)
+        logLayout.addWidget(logBrowser)
+        buttonsLayout = QHBoxLayout()
+        autoScroll = QCheckBox("Auto-scroll")
+        autoScroll.setObjectName("autoscroll")
+        autoScroll.setChecked(True)
+        buttonsLayout.addWidget(autoScroll)
+        clearButton = QPushButton(QIcon.fromTheme("delete"), "C&lear")
+        clearButton.clicked.connect(logBrowser.clear)
+        buttonsLayout.addWidget(clearButton)
+        copyButton = QPushButton(QIcon.fromTheme("edit-copy"), "Co&py")
+        copyButton.clicked.connect(self.__copy_log)
+        buttonsLayout.addWidget(copyButton)
+        closeButton = QPushButton(QIcon.fromTheme("dialog-close"), "&Close")
+        closeButton.clicked.connect(self.__log.close)
+        buttonsLayout.addWidget(closeButton)
+        logLayout.addLayout(buttonsLayout)
+
         # Build menu bar
         mainMenu = QMenuBar(self)
         fileMenu = mainMenu.addMenu("&File")
@@ -234,9 +294,12 @@ class MainWindow(QMainWindow):
         viewMenu = mainMenu.addMenu("&View")
         logMenuItem = QAction(QIcon.fromTheme("text-x-generic"), "&Logs", viewMenu)
         logMenuItem.setShortcut("Ctrl+L")
+        logMenuItem.triggered.connect(self.__log.show)
         viewMenu.addAction(logMenuItem)
         self.setMenuBar(mainMenu);
         self.setStatusBar(QStatusBar(self))
+
+        self.statusBar().messageChanged.connect(self.__status_updated)
 
         # Set tab order
         # It doesn't work :-(
