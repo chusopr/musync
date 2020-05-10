@@ -12,9 +12,7 @@ class SourceModule(modules.SourceModule):
     __username = None
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
 
-    def __init__(self):
-        super().__init__()
-
+    def initialize(self):
         if (os.path.isfile(self.__session_file)):
             try:
                 with open(self.__session_file, "r") as f:
@@ -101,9 +99,6 @@ class SourceModule(modules.SourceModule):
         ]
 
     def getTracks(self, playlist_name):
-        waitMsg = QMessageBox(QMessageBox.Information, "Fetching songs...", "Please wait while the list of songs is being downloaded (0 % completed).")
-        waitMsg.setModal(True)
-        waitMsg.show()
 
         tracks = []
         current_page = 1
@@ -124,10 +119,9 @@ class SourceModule(modules.SourceModule):
             for t in playlist["{}tracks".format(playlist_name)]["track"]:
                 tracks.append(self.__track_metadata(t))
             total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
-            waitMsg.setWindowTitle("Fetching songs... {} %".format(round(100*current_page/total_pages)))
-            waitMsg.setText("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
+            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
             current_page = current_page + 1
 
-        waitMsg.close()
+        self.__main.statusBar().showMessage("Finished loading tracks")
 
         return tracks

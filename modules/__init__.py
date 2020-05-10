@@ -7,7 +7,8 @@ ModuleMain = "__init__"
 
 class SourceModule(ABC):
 
-    def __init__(self):
+    def __init__(self, main):
+        self.__main = main
         self.__id = re.sub(r"%s." % ModulesFolder, "", self.__module__)
         try:
             self.__name
@@ -35,30 +36,33 @@ class SourceModule(ABC):
             return True
 
 modules = {}
-for m in os.listdir(ModulesFolder):
-    m_dir = os.path.join(ModulesFolder, m)
-    if not os.path.isdir(m_dir) or not os.path.isfile(os.path.join(m_dir, ModuleMain + ".py")):
-        # TODO log message
-        continue
-    spec = importlib.util.find_spec(ModulesFolder + "." + m)
-    module = ModuleType(spec.name)
-    module.__spec__ = spec
-    spec.loader.exec_module(module)
-    if not hasattr(module, "SourceModule"):
-        # TODO: log message
-        del module
-        continue
-    try:
-        mod = module.SourceModule()
-    except:
-        # TODO: log message
-        del module
-        continue
-    if not issubclass(module.SourceModule, SourceModule):
-        # TODO: log message
-        del module
-        continue
-    modules[m] = mod
+
+def load(main):
+    for m in os.listdir(ModulesFolder):
+        m_dir = os.path.join(ModulesFolder, m)
+        if not os.path.isdir(m_dir) or not os.path.isfile(os.path.join(m_dir, ModuleMain + ".py")):
+            # TODO log message
+            continue
+        spec = importlib.util.find_spec(ModulesFolder + "." + m)
+        module = ModuleType(spec.name)
+        module.__spec__ = spec
+        spec.loader.exec_module(module)
+        if not hasattr(module, "SourceModule"):
+            # TODO: log message
+            del module
+            continue
+        try:
+            mod = module.SourceModule(main)
+            mod.initialize()
+        except:
+            # TODO: log message
+            del module
+            continue
+        if not issubclass(module.SourceModule, SourceModule):
+            # TODO: log message
+            del module
+            continue
+        modules[m] = mod
 
 def listAll():
   l = {}

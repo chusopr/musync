@@ -99,9 +99,7 @@ class SourceModule(modules.SourceModule):
     __chromedriver_path = "/usr/bin/chromedriver"
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
 
-    def __init__(self):
-        super().__init__()
-
+    def initialize(self):
         if (os.path.isfile(self.__session_file)):
             try:
                 with open(self.__session_file, "r") as f:
@@ -424,6 +422,7 @@ class SourceModule(modules.SourceModule):
         if playlist == 'my-music':
             nextResultsToken = 0
             while nextResultsToken is not None:
+                self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} donwloaded).".format(nextResultsToken))
                 data = {
                     'maxResults': '100',
                     'nextResultsToken': nextResultsToken,
@@ -473,7 +472,10 @@ class SourceModule(modules.SourceModule):
                 else:
                     nextResultsToken = None
 
+            self.__main.statusBar().showMessage("Finished loading tracks")
+
         else:
+            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded")
             data = {
                 "playlistIds": [playlist],
                 "requestedMetadata": [
@@ -503,5 +505,7 @@ class SourceModule(modules.SourceModule):
 
             for t in tracklist:
                 tracks.append(self.__track_metadata(t["metadata"]["requestedMetadata"]))
+
+            self.__main.statusBar().showMessage("Finished loading tracks")
 
         return tracks

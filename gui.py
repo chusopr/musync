@@ -1,17 +1,23 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem
+from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QIcon, QColor
-import re, modules, icu
+import re, modules, icu, threading
 
 class MainWindow(QMainWindow):
     __sources = {
         "left":  None,
         "right": None
     }
+    __threads = {
+        "left": None,
+        "right": None,
+        "compare": None
+    }
 
     def __init__(self):
         super().__init__()
         self.buildUI()
+        modules.load(self)
 
     def __bogus_module(self, module_name):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
@@ -22,6 +28,7 @@ class MainWindow(QMainWindow):
         rList = self.findChild(QListWidget, "rightTracklist")
 
         for i in range(lList.count()):
+            self.statusBar().showMessage("Comparing tracklists ({} % completed).".format(round(100*i/lList.count())))
             l = lList.item(i)
             found = False
             for j in range(rList.count()):
@@ -37,19 +44,14 @@ class MainWindow(QMainWindow):
             if not found:
                 l.setForeground(QColor(127, 0, 0))
 
+        self.statusBar().showMessage("Finished comparing tracks.")
+
         for i in range(rList.count()):
             r = rList.item(i)
             if r.foreground() != QColor(0, 127, 0):
                 r.setForeground(QColor(127, 0, 0))
 
-    def __playlist_select(self, source_name):
-        # Remove links in the other tracklist to the ones in this one being removed
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if source_name is "left" else "left"))
-        for i in range(otherList.count()):
-            peer = otherList.item(i)
-            if "peer" in peer.track:
-                del peer.track["peer"]
-
+    def __load_tracks(self, source_name):
         current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
 
         # No playlist actually selected
@@ -74,7 +76,27 @@ class MainWindow(QMainWindow):
 
         # Check if the other playlist is also set to compare both
         if self.findChild(QComboBox, "{}Playlist".format("left" if source_name == "right" else "right")).currentData() is not None:
-            self.__compare_playlists()
+            thread = threading.Thread(target=self.__compare_playlists)
+            self.__threads["compare"] = thread
+            thread.start()
+
+    def __playlist_select(self, source_name):
+        for t in [source_name, "compare"]:
+            # Stop any thread running on this source
+            if self.__threads[t] is not None and self.__threads[t].isAlive():
+                # TODO: for now we just wait for the thread to finish instead of stopping it
+                self.__threads[t].join()
+
+        # Remove links in the other tracklist to the ones in this one being removed
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if source_name is "left" else "left"))
+        for i in range(otherList.count()):
+            peer = otherList.item(i)
+            if "peer" in peer.track:
+                del peer.track["peer"]
+
+        thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
+        self.__threads[source_name] = thread
+        thread.start()
 
     def __change_source(self, source_name, sourceDialog, sourcesList, sourceName):
         module_name = sourcesList.currentItem().text()
@@ -92,6 +114,7 @@ class MainWindow(QMainWindow):
         self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + module_name)
         self.__sources[sourceName] = modules.modules[module_slug]
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
+        playlistSelect.clear()
         playlistSelect.addItem("")
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist["id"])
@@ -192,8 +215,6 @@ class MainWindow(QMainWindow):
         syncBtn = QPushButton(QIcon.fromTheme("system-run"), "S&ync")
         syncBtn.clicked.connect(self.__start_sync)
         buttonsLayout.addWidget(syncBtn, 1, Qt.AlignRight)
-        settingsBtn = QPushButton(QIcon.fromTheme("preferences-other"), "&Settings")
-        buttonsLayout.addWidget(settingsBtn, 1, Qt.AlignRight)
         exitBtn = QPushButton(QIcon.fromTheme("window-close"), "Quit")
         exitBtn.clicked.connect(QCoreApplication.instance().quit)
         buttonsLayout.addWidget(exitBtn, 1, Qt.AlignRight)
@@ -205,9 +226,6 @@ class MainWindow(QMainWindow):
         syncMenuItem = QAction(QIcon.fromTheme("system-run"), "Start s&yncing", fileMenu)
         syncMenuItem.setShortcut("Ctrl+S")
         fileMenu.addAction(syncMenuItem)
-        settingsMenuItem = QAction(QIcon.fromTheme("preferences-other"), "&Settings", fileMenu)
-        settingsMenuItem.setShortcut("Ctrl+P")
-        fileMenu.addAction(settingsMenuItem)
         fileMenu.addAction(fileMenu.addSeparator())
         exitMenuItem = QAction(QIcon.fromTheme("window-close"), "&Exit", fileMenu)
         exitMenuItem.setShortcut("Ctrl+Q")
@@ -218,11 +236,10 @@ class MainWindow(QMainWindow):
         logMenuItem.setShortcut("Ctrl+L")
         viewMenu.addAction(logMenuItem)
         self.setMenuBar(mainMenu);
+        self.setStatusBar(QStatusBar(self))
 
         # Set tab order
         # It doesn't work :-(
-        #QWidget.setTabOrder(syncBtn, settingsBtn)
-        #QWidget.setTabOrder(settingsBtn, exitBtn)
         #QWidget.setTabOrder(exitBtn, leftSourceBtn)
         #QWidget.setTabOrder(leftSourceBtn, rightSourceBtn)
         #QWidget.setTabOrder(rightSourceBtn, leftTracklist)
