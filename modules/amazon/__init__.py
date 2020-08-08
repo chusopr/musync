@@ -166,7 +166,8 @@ class SourceModule(modules.SourceModule):
 
         r = self.__session.post("https://%s/%s" % (self.__domain, endpoint), headers=headers, json=data)
 
-        if (r.status_code == 401):
+        if r.status_code == 401 or r.status_code == 400:
+            self.__authenticated = False
             return self.__request(endpoint, target, data, headers, True)
 
         return r
