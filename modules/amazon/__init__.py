@@ -6,7 +6,7 @@ from selenium.common.exceptions import NoSuchElementException, WebDriverExceptio
 from urllib.parse import urlparse
 import requests, modules, json
 from appdirs import user_cache_dir
-import os
+import os, re
 
 class CaptchaForm(QDialog):
     __captcha_response = None
@@ -97,9 +97,13 @@ class SourceModule(modules.SourceModule):
     __domain = "music.amazon.com"
     # TODO: Using Chromedriver for debugging, will be replaced by PhantomJS
     __chromedriver_path = "/usr/bin/chromedriver"
-    __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
+
+    def __set_session_file(self):
+        self.__session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(self.__id))
 
     def initialize(self):
+        self.__set_session_file()
+        self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
         if (os.path.isfile(self.__session_file)):
             try:
                 with open(self.__session_file, "r") as f:
@@ -333,6 +337,11 @@ class SourceModule(modules.SourceModule):
         music_url = urlparse(self.__webdriver.current_url)
         self.__domain = music_url.hostname
 
+        self.__id = "amazon-{}".format(self.__amzn["customerId"])
+        # Not great, but Amazon Music doesn't really provide a friendly user name
+        self.__name = "Amazon Music account {}".format(self.__amzn["customerId"])
+        self.__set_session_file()
+
         self.__save_cache()
 
         if self.__webdriver is not None:
@@ -510,3 +519,7 @@ class SourceModule(modules.SourceModule):
             self.__main.statusBar().showMessage("Finished loading tracks")
 
         return tracks
+
+    def deleteAccount(self):
+        if (os.path.isfile(self.__session_file)):
+            os.remove(self.__session_file)

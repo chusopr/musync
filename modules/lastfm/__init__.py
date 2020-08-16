@@ -1,6 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QDialogButtonBox, QMessageBox
 from PyQt5.QtCore import Qt
-import requests, modules, json, os
+import requests, modules, json, os, re
 from appdirs import user_cache_dir
 
 class SourceModule(modules.SourceModule):
@@ -13,15 +13,9 @@ class SourceModule(modules.SourceModule):
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
 
     def initialize(self):
-        if (os.path.isfile(self.__session_file)):
-            try:
-                with open(self.__session_file, "r") as f:
-                    self.__domain, self.__cookies, self.__amzn = json.load(f)
-                requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
-                self.__authenticated = True
-
-            except Exception as e:
-                print("Need to re-authenticate: {}".format(str(e)))
+        self.__username = re.sub(r"lastfm-", "", self.__id)
+        self.__id = "lastfm-{}".format(self.__username)
+        self.__name = "{}'s Last.fm account".format(self.__username)
 
     def __http_debug(self):
         import http.client as http_client
@@ -50,6 +44,8 @@ class SourceModule(modules.SourceModule):
             return None
 
         self.__username = username
+        self.__id = "lastfm-{}".format(username)
+        self.initialize()
         authDialog.accept()
         return True
 
