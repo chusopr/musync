@@ -32,7 +32,6 @@ class MainWindow(QMainWindow):
                     self.__accounts[k] = modules.create_object(self, v)
                     self.__accounts[k].setId(k)
                     self.__accounts[k].initialize()
-                    print(self.__accounts[k].getName())
             except Exception as e:
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
 
@@ -140,6 +139,15 @@ class MainWindow(QMainWindow):
             peer = otherList.item(i)
             if "peer" in peer.track:
                 del peer.track["peer"]
+
+        if self.__sources["right"] is not None:
+            self.findChild(QPushButton, "ltrButton").setToolTip("Copy song to tracklist {} in {}".format(
+                        self.findChild(QComboBox, "rightPlaylist").currentText(),
+                        self.__sources["right"].getName()))
+        if self.__sources["left"] is not None:
+            self.findChild(QPushButton, "rtlButton").setToolTip("Copy song to tracklist {} in {}".format(
+                        self.findChild(QComboBox, "leftPlaylist").currentText(),
+                        self.__sources["left"].getName()))
 
         thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
         self.__threads[source_name] = thread
@@ -263,12 +271,22 @@ class MainWindow(QMainWindow):
         accountsDialog.show()
 
     def __track_select(self, item):
+        thisList = item.listWidget()
+        thisButton = self.findChild(QPushButton, "{}Button".format("ltr" if thisList.objectName() == "leftTracklist" else "rtl"))
+        unlinkButton = self.findChild(QPushButton, "unlinkButton")
+
         # If this track doesn't have a peer in the other tracklist, just finish
         if 'peer' not in item.track:
+            thisButton.setDisabled(False)
+            unlinkButton.setDisabled(True)
             return
+        else:
+            thisButton.setDisabled(True)
+            unlinkButton.setDisabled(False)
+            otherButton = self.findChild(QPushButton, "{}Button".format("rtl" if thisList.objectName() == "leftTracklist" else "ltr"))
+            otherButton.setDisabled(True)
 
         # Get this track's peer in the other tracklist and select it
-        thisList = item.listWidget()
         otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
 
         otherItem = otherList.item(item.track["peer"])
@@ -329,6 +347,25 @@ class MainWindow(QMainWindow):
 
         leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.__create_source_layout("left")
         mainLayout.addLayout(leftLayout)
+
+        copyButtonsLayout = QVBoxLayout()
+        ltrButton = QPushButton(">")
+        ltrButton.setObjectName("ltrButton")
+        ltrButton.setDisabled(True)
+        ltrButton.setToolTip("Copy song to right source")
+        copyButtonsLayout.addWidget(ltrButton)
+        rtlButton = QPushButton("<")
+        rtlButton.setObjectName("rtlButton")
+        rtlButton.setDisabled(True)
+        rtlButton.setToolTip("Copy song to left source")
+        copyButtonsLayout.addWidget(rtlButton)
+        unlinkButton = QPushButton("</>")
+        unlinkButton.setObjectName("unlinkButton")
+        unlinkButton.setDisabled(True)
+        unlinkButton.setToolTip("Unlink songs")
+        copyButtonsLayout.addWidget(unlinkButton)
+        mainLayout.addLayout(copyButtonsLayout)
+
         rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
         mainLayout.addLayout(rightLayout)
 
