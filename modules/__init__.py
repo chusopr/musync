@@ -30,12 +30,19 @@ class SourceModule(ABC):
     def getType(self):
         return self.__type
 
+    def isReadOnly(self):
+        return False
+
     @abstractmethod
     def getPlaylists(self):
         pass
 
     @abstractmethod
     def getTracks(self, playlist):
+        pass
+
+    @abstractmethod
+    def searchTrack(self, track):
         pass
 
     def deleteAccount(self):

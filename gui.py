@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
             trackList.takeItem(0)
         # Now add the tracks
         for t in tracks:
-            QListWidgetItem("%s - %s" % (t["artist"], t["title"]), trackList).track = t
+            QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList).track = t
 
         # Check if the other playlist is also set to compare both
         if self.findChild(QComboBox, "{}Playlist".format("left" if source_name == "right" else "right")).currentData() is not None:
@@ -141,13 +141,23 @@ class MainWindow(QMainWindow):
                 del peer.track["peer"]
 
         if self.__sources["right"] is not None:
-            self.findChild(QPushButton, "ltrButton").setToolTip("Copy song to tracklist {} in {}".format(
+            if self.__sources["right"].isReadOnly():
+                self.findChild(QPushButton, "ltrButton").setToolTip("Tracklist {} in {} is read-only".format(
                         self.findChild(QComboBox, "rightPlaylist").currentText(),
                         self.__sources["right"].getName()))
+            else:
+                self.findChild(QPushButton, "ltrButton").setToolTip("Copy song to tracklist {} in {}".format(
+                            self.findChild(QComboBox, "rightPlaylist").currentText(),
+                            self.__sources["right"].getName()))
         if self.__sources["left"] is not None:
-            self.findChild(QPushButton, "rtlButton").setToolTip("Copy song to tracklist {} in {}".format(
+            if self.__sources["left"].isReadOnly():
+                self.findChild(QPushButton, "rtlButton").setToolTip("Tracklist {} in {} is read-only".format(
                         self.findChild(QComboBox, "leftPlaylist").currentText(),
                         self.__sources["left"].getName()))
+            else:
+                self.findChild(QPushButton, "rtlButton").setToolTip("Copy song to tracklist {} in {}".format(
+                            self.findChild(QComboBox, "leftPlaylist").currentText(),
+                            self.__sources["left"].getName()))
 
         thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
         self.__threads[source_name] = thread
@@ -274,10 +284,16 @@ class MainWindow(QMainWindow):
         thisList = item.listWidget()
         thisButton = self.findChild(QPushButton, "{}Button".format("ltr" if thisList.objectName() == "leftTracklist" else "rtl"))
         unlinkButton = self.findChild(QPushButton, "unlinkButton")
+        otherSource = self.__sources["right" if thisList.objectName() == "leftTracklist" else "left"]
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
 
         # If this track doesn't have a peer in the other tracklist, just finish
         if 'peer' not in item.track:
-            thisButton.setDisabled(False)
+            if not otherSource.isReadOnly():
+                thisButton.setDisabled(False)
+            else:
+                thisButton.setDisabled(True)
+            otherList.setCurrentItem(None)
             unlinkButton.setDisabled(True)
             return
         else:
@@ -339,6 +355,53 @@ class MainWindow(QMainWindow):
         self.__log.findChild(QTextBrowser, "log").selectAll()
         self.__log.findChild(QTextBrowser, "log").copy()
 
+    def __add_song(self, tracksDialog, searchTracksList, sourceTrack, sourceTrackList, destination):
+        trackResult = searchTracksList.currentItem()
+        destTrackList = self.findChild(QListWidget, "{}Tracklist".format(destination))
+
+        sourceTrack.setForeground(QColor(127, 127, 0))
+        destTrack = QListWidgetItem("{} - {}".format(trackResult.track["artist"], trackResult.track["title"]), destTrackList)
+        destTrack.track = trackResult.track
+        destTrack.track["peer"] = sourceTrackList.row(sourceTrack)
+        sourceTrack.track["peer"] = destTrackList.row(destTrack)
+        destTrack.setForeground(QColor(127, 127, 0))
+        sourceTrack.peer = destTrack
+        
+        self.__status_updated('Song <span style="color: #00be00">{}</span> queued to be added to tracklist <strong>{}</strong> in <strong>{}</strong>'.format(
+            cgi.escape(destTrack.text()),
+            cgi.escape(self.findChild(QComboBox, "{}Playlist".format(destination)).currentText()),
+            cgi.escape(self.__sources[destination].getName())
+        ), False)
+        tracksDialog.close()
+
+    def __search_song(self, source, destination):
+        sTrackList = self.findChild(QListWidget, "{}Tracklist".format(source))
+        t = sTrackList.selectedItems()[0]
+        search_results = self.__sources[destination].searchTrack(t.track)
+        
+        tracksDialog = QDialog(self)
+        tracksDialog.setWindowTitle("muSync - {} - {}".format(t.track["artist"], t.track["title"]))
+        tracksDialog.setModal(True)
+        tracksLayout = QVBoxLayout(tracksDialog)
+        tracksList = QListWidget()
+        tracksLayout.addWidget(tracksList)
+        buttonsLayout = QHBoxLayout()
+        selectButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Select")
+        selectButton.clicked.connect(lambda: self.__add_song(tracksDialog, tracksList, t, sTrackList, destination))
+        selectButton.setDisabled(True)
+        buttonsLayout.addWidget(selectButton)
+        cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
+        cancelButton.clicked.connect(tracksDialog.close)
+        buttonsLayout.addWidget(cancelButton)
+        tracksLayout.addLayout(buttonsLayout)
+        for r in search_results:
+            trackItem = QListWidgetItem("{} - {}".format(r["artist"], r["title"]))
+            trackItem.track = r
+            tracksList.addItem(trackItem)
+        tracksList.itemSelectionChanged.connect(lambda: selectButton.setDisabled(True if tracksList.selectedIndexes() == [] else False))
+        tracksList.itemDoubleClicked.connect(lambda: self.__add_song(tracksDialog, tracksList, t, sTrackList, destination))
+        tracksDialog.show()
+
     def buildUI(self):
         centralWidget = QWidget(self)
         windowLayout = QVBoxLayout(centralWidget)
@@ -353,11 +416,13 @@ class MainWindow(QMainWindow):
         ltrButton.setObjectName("ltrButton")
         ltrButton.setDisabled(True)
         ltrButton.setToolTip("Copy song to right source")
+        ltrButton.clicked.connect(lambda: self.__search_song("left", "right"))
         copyButtonsLayout.addWidget(ltrButton)
         rtlButton = QPushButton("<")
         rtlButton.setObjectName("rtlButton")
         rtlButton.setDisabled(True)
         rtlButton.setToolTip("Copy song to left source")
+        rtlButton.clicked.connect(lambda: self.__search_song("right", "left"))
         copyButtonsLayout.addWidget(rtlButton)
         unlinkButton = QPushButton("</>")
         unlinkButton.setObjectName("unlinkButton")

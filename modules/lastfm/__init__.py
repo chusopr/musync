@@ -121,3 +121,59 @@ class SourceModule(modules.SourceModule):
         self.__main.statusBar().showMessage("Finished loading tracks")
 
         return tracks
+
+    def searchTrack(self, track):
+        tracks = []
+        current_page = 1
+        total_pages = 1
+
+        while current_page <= total_pages:
+            search_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
+                track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
+                track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
+                self.__api_key, current_page
+            ))
+
+            if search_request.status_code != 200:
+                self.__main.statusBar().showMessage("Error searching for tracks")
+                break
+
+            search_results = json.loads(search_request.text)
+
+            for d in search_results["results"]["trackmatches"]["track"]:
+                tracks.append({
+                    "artist": d["artist"],
+                    "title":  d["name"],
+                    "url":    d["url"]
+                })
+
+            total_pages = int(search_results["results"]["opensearch:totalResults"])
+            current_page = current_page + 1
+            continue
+
+            if (
+                    "{}tracks".format(playlist_name) not in playlist or
+                    "track" not in playlist["{}tracks".format(playlist_name)]
+            ):
+                break
+
+            for t in playlist["{}tracks".format(playlist_name)]["track"]:
+                tracks.append(self.__track_metadata(t))
+            total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
+            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
+            current_page = current_page + 1
+
+        return tracks
+
+    #def addTrack(self, track):
+        #search_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
+            #track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
+            #track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
+            #self.__api_key, current_page
+        #))
+
+        #if search_request.status_code != 200:
+            #self.__main.statusBar().showMessage("Error searching for tracks")
+            #break
+
+        #search_results = json.loads(search_request.text)

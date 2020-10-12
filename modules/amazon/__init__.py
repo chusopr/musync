@@ -369,3 +369,9 @@ class SourceModule(modules.SourceModule):
     def deleteAccount(self):
         if (os.path.isfile(self.__session_file)):
             os.remove(self.__session_file)
+
+    def searchTrack(self, track):
+        pass
+
+    def isReadOnly(self):
+        return True
