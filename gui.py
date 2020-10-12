@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QMainWindow, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox
+from PyQt5.QtWidgets import QWizard, QWizardPage, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QHBoxLayout, QWizard
 from PyQt5.QtCore import QCoreApplication, Qt
 from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
@@ -6,7 +6,19 @@ import re, modules, icu, threading, cgi, json, os
 from appdirs import user_config_dir
 from sys import stderr
 
-class MainWindow(QMainWindow):
+class Page1(QWizardPage):
+    __completed = False
+
+    def __init__(self):
+        super().__init__()
+
+    def setCompleted(self, c):
+        self.__completed = c
+
+    def isComplete(self):
+        return self.__completed
+
+class MainWindow(QWizard):
     __sources = {
         "left":  None,
         "right": None
@@ -83,7 +95,10 @@ class MainWindow(QMainWindow):
                     cgi.escape(self.__sources["right"].getName())
                 ), False)
 
+        # FIXME: Should only be run when both tracklists finished downloading
         self.statusBar().showMessage("Finished comparing tracks.")
+        self.page(0).setCompleted(True)
+        self.page(0).completeChanged.emit()
 
         for i in range(rList.count()):
             r = rList.item(i)
@@ -139,25 +154,6 @@ class MainWindow(QMainWindow):
             peer = otherList.item(i)
             if "peer" in peer.track:
                 del peer.track["peer"]
-
-        if self.__sources["right"] is not None:
-            if self.__sources["right"].isReadOnly():
-                self.findChild(QPushButton, "ltrButton").setToolTip("Tracklist {} in {} is read-only".format(
-                        self.findChild(QComboBox, "rightPlaylist").currentText(),
-                        self.__sources["right"].getName()))
-            else:
-                self.findChild(QPushButton, "ltrButton").setToolTip("Copy song to tracklist {} in {}".format(
-                            self.findChild(QComboBox, "rightPlaylist").currentText(),
-                            self.__sources["right"].getName()))
-        if self.__sources["left"] is not None:
-            if self.__sources["left"].isReadOnly():
-                self.findChild(QPushButton, "rtlButton").setToolTip("Tracklist {} in {} is read-only".format(
-                        self.findChild(QComboBox, "leftPlaylist").currentText(),
-                        self.__sources["left"].getName()))
-            else:
-                self.findChild(QPushButton, "rtlButton").setToolTip("Copy song to tracklist {} in {}".format(
-                            self.findChild(QComboBox, "leftPlaylist").currentText(),
-                            self.__sources["left"].getName()))
 
         thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
         self.__threads[source_name] = thread
@@ -282,28 +278,12 @@ class MainWindow(QMainWindow):
 
     def __track_select(self, item):
         thisList = item.listWidget()
-        thisButton = self.findChild(QPushButton, "{}Button".format("ltr" if thisList.objectName() == "leftTracklist" else "rtl"))
-        unlinkButton = self.findChild(QPushButton, "unlinkButton")
-        otherSource = self.__sources["right" if thisList.objectName() == "leftTracklist" else "left"]
         otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
 
         # If this track doesn't have a peer in the other tracklist, just finish
         if 'peer' not in item.track:
-            if not otherSource.isReadOnly():
-                thisButton.setDisabled(False)
-            else:
-                thisButton.setDisabled(True)
             otherList.setCurrentItem(None)
-            unlinkButton.setDisabled(True)
             return
-        else:
-            thisButton.setDisabled(True)
-            unlinkButton.setDisabled(False)
-            otherButton = self.findChild(QPushButton, "{}Button".format("rtl" if thisList.objectName() == "leftTracklist" else "ltr"))
-            otherButton.setDisabled(True)
-
-        # Get this track's peer in the other tracklist and select it
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
 
         otherItem = otherList.item(item.track["peer"])
         otherItem.setSelected(True)
@@ -366,7 +346,7 @@ class MainWindow(QMainWindow):
         sourceTrack.track["peer"] = destTrackList.row(destTrack)
         destTrack.setForeground(QColor(127, 127, 0))
         sourceTrack.peer = destTrack
-        
+
         self.__status_updated('Song <span style="color: #00be00">{}</span> queued to be added to tracklist <strong>{}</strong> in <strong>{}</strong>'.format(
             cgi.escape(destTrack.text()),
             cgi.escape(self.findChild(QComboBox, "{}Playlist".format(destination)).currentText()),
@@ -378,7 +358,7 @@ class MainWindow(QMainWindow):
         sTrackList = self.findChild(QListWidget, "{}Tracklist".format(source))
         t = sTrackList.selectedItems()[0]
         search_results = self.__sources[destination].searchTrack(t.track)
-        
+
         tracksDialog = QDialog(self)
         tracksDialog.setWindowTitle("muSync - {} - {}".format(t.track["artist"], t.track["title"]))
         tracksDialog.setModal(True)
@@ -402,49 +382,30 @@ class MainWindow(QMainWindow):
         tracksList.itemDoubleClicked.connect(lambda: self.__add_song(tracksDialog, tracksList, t, sTrackList, destination))
         tracksDialog.show()
 
-    def buildUI(self):
-        centralWidget = QWidget(self)
-        windowLayout = QVBoxLayout(centralWidget)
+    def statusBar(self):
+        return self.findChild(QStatusBar, "statusBar")
 
-        mainLayout = QHBoxLayout()
+    def __page_changed(self):
+        self.currentPage().children()[0].addWidget(self.statusBar())
+
+    def buildUI(self):
+        page1 = Page1()
+        page1Layout = QVBoxLayout(page1)
+
+        sourcesLayout = QHBoxLayout()
+        page1Layout.addLayout(sourcesLayout)
 
         leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.__create_source_layout("left")
-        mainLayout.addLayout(leftLayout)
-
-        copyButtonsLayout = QVBoxLayout()
-        ltrButton = QPushButton(">")
-        ltrButton.setObjectName("ltrButton")
-        ltrButton.setDisabled(True)
-        ltrButton.setToolTip("Copy song to right source")
-        ltrButton.clicked.connect(lambda: self.__search_song("left", "right"))
-        copyButtonsLayout.addWidget(ltrButton)
-        rtlButton = QPushButton("<")
-        rtlButton.setObjectName("rtlButton")
-        rtlButton.setDisabled(True)
-        rtlButton.setToolTip("Copy song to left source")
-        rtlButton.clicked.connect(lambda: self.__search_song("right", "left"))
-        copyButtonsLayout.addWidget(rtlButton)
-        unlinkButton = QPushButton("</>")
-        unlinkButton.setObjectName("unlinkButton")
-        unlinkButton.setDisabled(True)
-        unlinkButton.setToolTip("Unlink songs")
-        copyButtonsLayout.addWidget(unlinkButton)
-        mainLayout.addLayout(copyButtonsLayout)
-
+        sourcesLayout.addLayout(leftLayout)
         rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
-        mainLayout.addLayout(rightLayout)
+        sourcesLayout.addLayout(rightLayout)
 
-        windowLayout.addLayout(mainLayout, 1)
+        statusBar = QStatusBar(self)
+        statusBar.setObjectName("statusBar")
+        statusBar.messageChanged.connect(self.__status_updated)
 
-        buttonsWidget = QWidget()
-        buttonsLayout = QHBoxLayout(buttonsWidget)
-        syncBtn = QPushButton(QIcon.fromTheme("system-run"), "S&ync")
-        syncBtn.clicked.connect(self.__start_sync)
-        buttonsLayout.addWidget(syncBtn, 1, Qt.AlignRight)
-        exitBtn = QPushButton(QIcon.fromTheme("window-close"), "Quit")
-        exitBtn.clicked.connect(QCoreApplication.instance().quit)
-        buttonsLayout.addWidget(exitBtn, 1, Qt.AlignRight)
-        windowLayout.addWidget(buttonsWidget, 0, Qt.AlignRight)
+        page1Layout.addWidget(statusBar)
+        self.addPage(page1)
 
         self.__log = QDialog(self)
         self.__log.resize(540, 250)
@@ -471,37 +432,12 @@ class MainWindow(QMainWindow):
         buttonsLayout.addWidget(closeButton)
         logLayout.addLayout(buttonsLayout)
 
-        # Build menu bar
-        mainMenu = QMenuBar(self)
-        fileMenu = mainMenu.addMenu("&File")
-        syncMenuItem = QAction(QIcon.fromTheme("system-run"), "Start s&yncing", fileMenu)
-        syncMenuItem.setShortcut("Ctrl+S")
-        fileMenu.addAction(syncMenuItem)
-        fileMenu.addAction(fileMenu.addSeparator())
-        exitMenuItem = QAction(QIcon.fromTheme("window-close"), "&Exit", fileMenu)
-        exitMenuItem.setShortcut("Ctrl+Q")
-        exitMenuItem.triggered.connect(QCoreApplication.instance().quit)
-        fileMenu.addAction(exitMenuItem)
-        viewMenu = mainMenu.addMenu("&View")
-        logMenuItem = QAction(QIcon.fromTheme("text-x-generic"), "&Logs", viewMenu)
-        logMenuItem.setShortcut("Ctrl+L")
-        logMenuItem.triggered.connect(self.__log.show)
-        viewMenu.addAction(logMenuItem)
-        self.setMenuBar(mainMenu);
-        self.setStatusBar(QStatusBar(self))
+        self.setButtonText(QWizard.CustomButton1, "&Logs")
+        self.setOption(QWizard.HaveCustomButton1, True)
+        self.customButtonClicked.connect(self.__log.show)
 
-        self.statusBar().messageChanged.connect(self.__status_updated)
-
-        # Set tab order
-        # It doesn't work :-(
-        #QWidget.setTabOrder(exitBtn, leftSourceBtn)
-        #QWidget.setTabOrder(leftSourceBtn, rightSourceBtn)
-        #QWidget.setTabOrder(rightSourceBtn, leftTracklist)
-        #QWidget.setTabOrder(leftList, rightTracklist)
-
-        syncBtn.setFocus(Qt.OtherFocusReason)
+        self.currentIdChanged.connect(self.__page_changed)
 
         # Show window
-        self.setCentralWidget(centralWidget)
         self.setWindowTitle('muSync')
         self.show()
