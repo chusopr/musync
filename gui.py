@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QWizard, QWizardPage, QWidget, QAction, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QMenuBar, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QHBoxLayout, QWizard
-from PyQt5.QtCore import QCoreApplication, Qt
+from PyQt5.QtWidgets import QWizard, QWizardPage, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QScrollArea
+from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
@@ -11,6 +11,53 @@ class Page1(QWizardPage):
 
     def __init__(self):
         super().__init__()
+
+    def update(self):
+        pass
+
+    def setCompleted(self, c):
+        self.__completed = c
+        self.completeChanged.emit()
+
+    def isComplete(self):
+        return self.__completed
+
+class Page2(QWizardPage):
+    __completed = False
+
+    def __init__(self):
+        super().__init__()
+
+    def update(self):
+        lList = self.parent().findChild(QListWidget, "leftTracklist")
+        rList = self.parent().findChild(QListWidget, "rightTracklist")
+
+        scroll_client = self.findChild(QWidget, "scrollClient")
+        songs_table = self.findChild(QGridLayout, "songs_table")
+        if songs_table:
+            songs_table.deleteLater()
+        songs_table = QGridLayout()
+        songs_table.setObjectName("songs_table")
+        scroll_client.setLayout(songs_table)
+
+        lPos = rPos = 0
+        # TODO: use a similar approach for colouring the previous page, which must be more efficient
+        # FIXME: crashes if left list is empty
+        while lPos < lList.count() or rPos < rList.count():
+            if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
+                song = lList.item(lPos)
+                lPos = lPos + 1
+                side = 0
+            else:
+                song = rList.item(rPos)
+                rPos = rPos + 1
+                side = 1
+
+            if "peer" in song.track and song.track["peer"]:
+                continue
+
+            songs_table.addWidget(QLabel("{} - {}".format(song.track["artist"], song.track["title"])), songs_table.rowCount(), side)
+            songs_table.addWidget(QComboBox(), songs_table.rowCount()-1, int(not side))
 
     def setCompleted(self, c):
         self.__completed = c
@@ -60,6 +107,7 @@ class MainWindow(QWizard):
         errorMsg.show()
 
     def __compare_playlists(self):
+        self.page(0).setCompleted(False)
         lList = self.findChild(QListWidget, "leftTracklist")
         rList = self.findChild(QListWidget, "rightTracklist")
 
@@ -98,7 +146,6 @@ class MainWindow(QWizard):
         # FIXME: Should only be run when both tracklists finished downloading
         self.statusBar().showMessage("Finished comparing tracks.")
         self.page(0).setCompleted(True)
-        self.page(0).completeChanged.emit()
 
         for i in range(rList.count()):
             r = rList.item(i)
@@ -113,6 +160,7 @@ class MainWindow(QWizard):
                 ), False)
 
     def __load_tracks(self, source_name):
+        self.page(0).setCompleted(False)
         current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
 
         # No playlist actually selected
@@ -142,6 +190,7 @@ class MainWindow(QWizard):
             thread.start()
 
     def __playlist_select(self, source_name):
+        self.page(0).setCompleted(False)
         for t in [source_name, "compare"]:
             # Stop any thread running on this source
             if self.__threads[t] is not None and self.__threads[t].isAlive():
@@ -160,6 +209,7 @@ class MainWindow(QWizard):
         thread.start()
 
     def __change_account(self, source_name, accountsDialog, accountsList, sourceName):
+        self.page(0).setCompleted(False)
         source = accountsList.selectedItems()[0].source
         if not source.isAuthenticated() and not source.authenticate(self):
             # TODO show error
@@ -386,7 +436,9 @@ class MainWindow(QWizard):
         return self.findChild(QStatusBar, "statusBar")
 
     def __page_changed(self):
-        self.currentPage().children()[0].addWidget(self.statusBar())
+        if self.currentPage() is not None:
+            self.currentPage().children()[0].addWidget(self.statusBar())
+            self.currentPage().update()
 
     def buildUI(self):
         page1 = Page1()
@@ -406,6 +458,16 @@ class MainWindow(QWizard):
 
         page1Layout.addWidget(statusBar)
         self.addPage(page1)
+
+        page2 = Page2()
+        page2Layout = QVBoxLayout(page2)
+        scrollArea = QScrollArea()
+        scrollClient = QWidget()
+        scrollClient.setObjectName("scrollClient")
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(scrollClient)
+        page2Layout.addWidget(scrollArea)
+        self.addPage(page2)
 
         self.__log = QDialog(self)
         self.__log.resize(540, 250)
