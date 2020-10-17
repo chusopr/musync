@@ -1,69 +1,11 @@
-from PyQt5.QtWidgets import QWizard, QWizardPage, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QScrollArea
+from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QScrollArea
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
+import wizard.page1, wizard.page2
 from appdirs import user_config_dir
 from sys import stderr
-
-class Page1(QWizardPage):
-    __completed = False
-
-    def __init__(self):
-        super().__init__()
-
-    def update(self):
-        pass
-
-    def setCompleted(self, c):
-        self.__completed = c
-        self.completeChanged.emit()
-
-    def isComplete(self):
-        return self.__completed
-
-class Page2(QWizardPage):
-    __completed = False
-
-    def __init__(self):
-        super().__init__()
-
-    def update(self):
-        lList = self.parent().findChild(QListWidget, "leftTracklist")
-        rList = self.parent().findChild(QListWidget, "rightTracklist")
-
-        scroll_client = self.findChild(QWidget, "scrollClient")
-        songs_table = self.findChild(QGridLayout, "songs_table")
-        if songs_table:
-            songs_table.deleteLater()
-        songs_table = QGridLayout()
-        songs_table.setObjectName("songs_table")
-        scroll_client.setLayout(songs_table)
-
-        lPos = rPos = 0
-        # TODO: use a similar approach for colouring the previous page, which must be more efficient
-        # FIXME: crashes if left list is empty
-        while lPos < lList.count() or rPos < rList.count():
-            if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
-                song = lList.item(lPos)
-                lPos = lPos + 1
-                side = 0
-            else:
-                song = rList.item(rPos)
-                rPos = rPos + 1
-                side = 1
-
-            if "peer" in song.track and song.track["peer"]:
-                continue
-
-            songs_table.addWidget(QLabel("{} - {}".format(song.track["artist"], song.track["title"])), songs_table.rowCount(), side)
-            songs_table.addWidget(QComboBox(), songs_table.rowCount()-1, int(not side))
-
-    def setCompleted(self, c):
-        self.__completed = c
-
-    def isComplete(self):
-        return self.__completed
 
 class MainWindow(QWizard):
     __sources = {
@@ -93,6 +35,9 @@ class MainWindow(QWizard):
                     self.__accounts[k].initialize()
             except Exception as e:
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
+
+    def getSource(self, s):
+        return self.__sources[s]
 
     def __save_settings(self):
         s = {}
@@ -441,7 +386,7 @@ class MainWindow(QWizard):
             self.currentPage().update()
 
     def buildUI(self):
-        page1 = Page1()
+        page1 = wizard.page1.Page1()
         page1Layout = QVBoxLayout(page1)
 
         sourcesLayout = QHBoxLayout()
@@ -459,7 +404,7 @@ class MainWindow(QWizard):
         page1Layout.addWidget(statusBar)
         self.addPage(page1)
 
-        page2 = Page2()
+        page2 = wizard.page2.Page2()
         page2Layout = QVBoxLayout(page2)
         scrollArea = QScrollArea()
         scrollClient = QWidget()

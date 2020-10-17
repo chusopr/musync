@@ -144,7 +144,7 @@ class SourceModule(modules.SourceModule):
                 tracks.append({
                     "artist": d["artist"],
                     "title":  d["name"],
-                    "url":    d["url"]
+                    "id":     d["url"]
                 })
 
             total_pages = int(search_results["results"]["opensearch:totalResults"])
