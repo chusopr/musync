@@ -150,7 +150,8 @@ class SourceModule(modules.SourceModule):
 
             total_pages = ceil(float(search_results["results"]["opensearch:totalResults"])/int(search_results["results"]["opensearch:itemsPerPage"]))
             current_page = current_page + 1
-            continue
+            # Get only one page for now
+            break
 
             if (
                     "{}tracks".format(playlist_name) not in playlist or
