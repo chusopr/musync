@@ -2,6 +2,7 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit
 from PyQt5.QtCore import Qt
 import requests, modules, json, os, re
 from appdirs import user_cache_dir
+from math import ceil
 
 class SourceModule(modules.SourceModule):
     __id = "lastfm"
@@ -147,7 +148,7 @@ class SourceModule(modules.SourceModule):
                     "id":     d["url"]
                 })
 
-            total_pages = int(search_results["results"]["opensearch:totalResults"])
+            total_pages = ceil(float(search_results["results"]["opensearch:totalResults"])/int(search_results["results"]["opensearch:itemsPerPage"]))
             current_page = current_page + 1
             continue
 
