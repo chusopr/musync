@@ -1,7 +1,17 @@
 from wizard import WizardPage
-from PyQt5.QtWidgets import QWidget, QListWidget, QGridLayout, QLabel, QComboBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox
 
 class Page2(WizardPage):
+    def __init__(self):
+        super().__init__()
+        page2Layout = QVBoxLayout(self)
+        scrollArea = QScrollArea()
+        scrollClient = QWidget()
+        scrollClient.setObjectName("scrollClient")
+        scrollArea.setWidgetResizable(True)
+        scrollArea.setWidget(scrollClient)
+        page2Layout.addWidget(scrollArea)
+
     def update(self):
         lList = self.parent().findChild(QListWidget, "leftTracklist")
         rList = self.parent().findChild(QListWidget, "rightTracklist")

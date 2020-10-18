@@ -1,9 +1,8 @@
-from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QGridLayout, QScrollArea
-from PyQt5.QtCore import Qt
+from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QScrollArea
 from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
-import wizard.page1, wizard.page2
+from wizard.page1 import Page1
 from appdirs import user_config_dir
 from sys import stderr
 
@@ -69,7 +68,7 @@ class MainWindow(QWizard):
                     r.setForeground(QColor(0, 127, 0))
                     l.track["peer"] = j
                     r.track["peer"] = i
-                    self.__status_updated('Song <span style="color: #00be00">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> found as <span style="color: #00be00">{}</span> in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                    self._status_updated('Song <span style="color: #00be00">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> found as <span style="color: #00be00">{}</span> in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                         cgi.escape(l.text()),
                         cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
                         cgi.escape(self.__sources["left"].getName()),
@@ -80,7 +79,7 @@ class MainWindow(QWizard):
                     break
             if not found:
                 l.setForeground(QColor(127, 0, 0))
-                self.__status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                self._status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                     cgi.escape(l.text()),
                     cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
                     cgi.escape(self.__sources["left"].getName()),
@@ -96,7 +95,7 @@ class MainWindow(QWizard):
             r = rList.item(i)
             if r.foreground() != QColor(0, 127, 0):
                 r.setForeground(QColor(127, 0, 0))
-                self.__status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
+                self._status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                     cgi.escape(r.text()),
                     cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
                     cgi.escape(self.__sources["right"].getName()),
@@ -134,7 +133,7 @@ class MainWindow(QWizard):
             self.__threads["compare"] = thread
             thread.start()
 
-    def __playlist_select(self, source_name):
+    def _playlist_select(self, source_name):
         self.page(0).setCompleted(False)
         for t in [source_name, "compare"]:
             # Stop any thread running on this source
@@ -230,7 +229,7 @@ class MainWindow(QWizard):
         accountsList.takeItem(accountsList.currentRow())
         self.__save_settings()
 
-    def __account_select(self, source_name):
+    def _account_select(self, source_name):
         source_modules = modules.listAll()
         if len(source_modules) == 0:
             errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source modules found", QMessageBox.Ok, self)
@@ -271,7 +270,7 @@ class MainWindow(QWizard):
         accountsList.itemDoubleClicked.connect(lambda: self.__change_account(source_name, accountsDialog, accountsList, sourceName))
         accountsDialog.show()
 
-    def __track_select(self, item):
+    def _track_select(self, item):
         thisList = item.listWidget()
         otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
 
@@ -284,33 +283,6 @@ class MainWindow(QWizard):
         otherItem.setSelected(True)
         otherList.scrollToItem(otherItem)
 
-    def __create_source_layout(self, source_name):
-        sourceLayout = QVBoxLayout()
-        selectedSourceLayout = QHBoxLayout()
-        sourceLabel = QLabel("Selected source: None")
-        sourceLabel.setObjectName(source_name + "SourceLabel")
-        selectedSourceLayout.addWidget(sourceLabel, 1)
-        changeSourceBtn = QPushButton("Change...")
-        changeSourceBtn.setObjectName(source_name + "SourceBtn")
-        changeSourceBtn.clicked.connect(lambda: self.__account_select(source_name))
-        selectedSourceLayout.addWidget(changeSourceBtn)
-        playlistLabel = QLabel("Selected playlist:")
-        playlistLabel.setObjectName(source_name + "PlaylistLabel")
-        playlistLabel.setDisabled(True)
-        selectedSourceLayout.addWidget(playlistLabel)
-        playlistSelect = QComboBox()
-        playlistSelect.setDisabled(True)
-        playlistSelect.setObjectName(source_name + "Playlist")
-        playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(source_name))
-        selectedSourceLayout.addWidget(playlistSelect, 1)
-        sourceLayout.addLayout(selectedSourceLayout)
-
-        trackList = QListWidget()
-        trackList.setObjectName(source_name + "Tracklist")
-        trackList.itemClicked.connect(self.__track_select)
-        sourceLayout.addWidget(trackList)
-        return (sourceLayout, playlistSelect, trackList, changeSourceBtn)
-
     def __start_sync(self):
         if not (self.sources["left"] and self.sources["right"] and self.playlists["left"] and self.playlists["right"]):
             errorMsg = QMessageBox(QMessageBox.Warning, "No sources selected", "You must select sources and playlists first", QMessageBox.Ok, self)
@@ -319,7 +291,7 @@ class MainWindow(QWizard):
         errorMsg = QMessageBox(QMessageBox.Warning, "No sources selected", "OK first", QMessageBox.Ok, self)
         errorMsg.show()
 
-    def __status_updated(self, msg, escape=True):
+    def _status_updated(self, msg, escape=True):
         if self.__log is not None:
             log = self.__log.findChild(QTextBrowser, "log")
             log.append('<span style="color: #bebebe">{} - </span>{}'.format(datetime.now(), cgi.escape(msg) if escape else msg))
@@ -342,7 +314,7 @@ class MainWindow(QWizard):
         destTrack.setForeground(QColor(127, 127, 0))
         sourceTrack.peer = destTrack
 
-        self.__status_updated('Song <span style="color: #00be00">{}</span> queued to be added to tracklist <strong>{}</strong> in <strong>{}</strong>'.format(
+        self._status_updated('Song <span style="color: #00be00">{}</span> queued to be added to tracklist <strong>{}</strong> in <strong>{}</strong>'.format(
             cgi.escape(destTrack.text()),
             cgi.escape(self.findChild(QComboBox, "{}Playlist".format(destination)).currentText()),
             cgi.escape(self.__sources[destination].getName())
@@ -386,33 +358,7 @@ class MainWindow(QWizard):
             self.currentPage().update()
 
     def buildUI(self):
-        page1 = wizard.page1.Page1()
-        page1Layout = QVBoxLayout(page1)
-
-        sourcesLayout = QHBoxLayout()
-        page1Layout.addLayout(sourcesLayout)
-
-        leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.__create_source_layout("left")
-        sourcesLayout.addLayout(leftLayout)
-        rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
-        sourcesLayout.addLayout(rightLayout)
-
-        statusBar = QStatusBar(self)
-        statusBar.setObjectName("statusBar")
-        statusBar.messageChanged.connect(self.__status_updated)
-
-        page1Layout.addWidget(statusBar)
-        self.addPage(page1)
-
-        page2 = wizard.page2.Page2()
-        page2Layout = QVBoxLayout(page2)
-        scrollArea = QScrollArea()
-        scrollClient = QWidget()
-        scrollClient.setObjectName("scrollClient")
-        scrollArea.setWidgetResizable(True)
-        scrollArea.setWidget(scrollClient)
-        page2Layout.addWidget(scrollArea)
-        self.addPage(page2)
+        Page1(self)
 
         self.__log = QDialog(self)
         self.__log.resize(540, 250)
