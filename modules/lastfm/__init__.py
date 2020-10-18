@@ -1,8 +1,8 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QDialogButtonBox, QMessageBox
-from PyQt5.QtCore import Qt
 import requests, modules, json, os, re
 from appdirs import user_cache_dir
 from math import ceil
+from modules.lastfm.auth import AuthDialog
 
 class SourceModule(modules.SourceModule):
     __id = "lastfm"
@@ -35,52 +35,19 @@ class SourceModule(modules.SourceModule):
         track["title"] = d["name"] if "name" in d else ""
         return track
 
-    def __reject_auth(self, authDialog):
-        authDialog.reject()
-
-    def __login(self, authDialog, username):
-        r = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(username, self.__api_key))
-
-        if r.status_code != 200:
-            authDialog.reject()
-            return None
-
-        self.__username = username
-        self.__id = "lastfm-{}".format(username)
-        self.initialize()
-        authDialog.accept()
-        return True
-
     def isAuthenticated(self):
         return self.__username is not None
 
     def authenticate(self, window, force=False):
         if self.__username is not None:
             return True
-        authDialog = QDialog(window)
-        authLayout = QVBoxLayout(authDialog)
-
-        authLabel = QLabel("Please provide your %s account name" % self.__name, authDialog)
-
-        authLayout.addWidget(authLabel)
-
-        userLayout = QHBoxLayout()
-
-        userLayout.addWidget(QLabel("Username:", authDialog))
-        userInput = QLineEdit(authDialog)
-        userLayout.addWidget(userInput)
-
-        authLayout.addLayout(userLayout)
-
-        buttonBox = QDialogButtonBox(authDialog);
-        buttonBox.setOrientation(Qt.Horizontal)
-        buttonBox.setStandardButtons(QDialogButtonBox.Cancel|QDialogButtonBox.Ok);
-
-        authLayout.addWidget(buttonBox);
-
-        buttonBox.accepted.connect(lambda: self.__login(authDialog, userInput.text()))
-        buttonBox.rejected.connect(lambda: self.__reject_auth(authDialog))
-        return True if authDialog.exec() == QDialog.Accepted else False
+        authDialog = AuthDialog(self.__api_key)
+        if authDialog.exec() == QDialog.Accepted:
+            self.__id = "lastfm-{}".format(authDialog.getUser())
+            print(self.__id)
+            self.initialize()
+            return True
+        return False
 
     def getPlaylists(self):
         return [
