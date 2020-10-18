@@ -3,7 +3,7 @@ from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
 from wizard.page1 import Page1
-from dialogs.sources import SourcesDialog
+from dialogs.accounts import AccountsDialog
 from appdirs import user_config_dir
 from sys import stderr
 
@@ -153,7 +153,7 @@ class MainWindow(QWizard):
         self.__threads[source_name] = thread
         thread.start()
 
-    def __change_account(self, source_name, accountsDialog, accountsList, sourceName):
+    def _change_account(self, source_name, accountsList):
         self.page(0).setCompleted(False)
         source = accountsList.selectedItems()[0].source
         if not source.isAuthenticated() and not source.authenticate(self):
@@ -164,25 +164,15 @@ class MainWindow(QWizard):
         if not playlists or len(playlists) == 0:
             self._bogus_module(source.getName())
             return
-        self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + source.getName())
-        self.__sources[sourceName] = source
+        self.findChild(QLabel, source_name + "SourceLabel").setText("Selected source: " + source.getName())
+        self.__sources[source_name] = source
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
         playlistSelect.clear()
         playlistSelect.addItem("")
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist["id"])
-        accountsDialog.close()
         playlistSelect.setDisabled(False)
         self.findChild(QLabel, source_name + "PlaylistLabel").setDisabled(False)
-
-    def __source_select(self, accountsList):
-        sourceDialog = SourcesDialog(accountsList)
-
-    def __del_account (self, source_name, accountsDialog, accountsList, sourceName):
-        del self._accounts[accountsList.selectedItems()[0].source.getId()]
-        accountsList.selectedItems()[0].source.deleteAccount()
-        accountsList.takeItem(accountsList.currentRow())
-        self.__save_settings()
 
     def _account_select(self, source_name):
         source_modules = modules.listAll()
@@ -192,38 +182,7 @@ class MainWindow(QWizard):
             return
 
         sourceName = re.sub(r"SourceBtn$", "", self.sender().objectName())
-        accountsDialog = QDialog(self)
-        accountsDialog.setWindowTitle("muSync - Accounts")
-        accountsDialog.setModal(True)
-        dialogLayout = QVBoxLayout(accountsDialog)
-        accountsList = QListWidget()
-        dialogLayout.addWidget(accountsList)
-        buttonsLayout = QHBoxLayout()
-        addButton = QPushButton(QIcon.fromTheme("list-resource-add"), "&Add account")
-        addButton.clicked.connect(lambda: self.__source_select(accountsList))
-        buttonsLayout.addWidget(addButton)
-        delButton = QPushButton(QIcon.fromTheme("edit-delete"), "&Remove account")
-        delButton.clicked.connect(lambda: self.__del_account(source_name, accountsDialog, accountsList, sourceName))
-        delButton.setDisabled(True)
-        buttonsLayout.addWidget(delButton)
-        okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Select source")
-        okButton.clicked.connect(lambda: self.__change_account(source_name, accountsDialog, accountsList, sourceName))
-        okButton.setDisabled(True)
-        buttonsLayout.addWidget(okButton)
-        cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
-        cancelButton.clicked.connect(accountsDialog.close)
-        buttonsLayout.addWidget(cancelButton)
-        dialogLayout.addLayout(buttonsLayout)
-        accountsList.itemSelectionChanged.connect(lambda: okButton.setDisabled(True if accountsList.selectedIndexes() == [] else False))
-        accountsList.itemSelectionChanged.connect(lambda: delButton.setDisabled(True if accountsList.selectedIndexes() == [] else False))
-
-        for account in self._accounts.values():
-            sourceItem = QListWidgetItem(account.getName())
-            sourceItem.source = account
-            accountsList.addItem(sourceItem)
-
-        accountsList.itemDoubleClicked.connect(lambda: self.__change_account(source_name, accountsDialog, accountsList, sourceName))
-        accountsDialog.show()
+        accountsDialog = AccountsDialog(self, source_name)
 
     def _track_select(self, item):
         thisList = item.listWidget()
