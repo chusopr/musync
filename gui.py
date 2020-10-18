@@ -3,6 +3,7 @@ from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
 from wizard.page1 import Page1
+from dialogs.sources import SourcesDialog
 from appdirs import user_config_dir
 from sys import stderr
 
@@ -18,7 +19,7 @@ class MainWindow(QWizard):
     }
     __accounts_file = os.path.join(user_config_dir("musync"), "accounts.json")
     __log = None
-    __accounts = {}
+    _accounts = {}
 
     def __init__(self):
         super().__init__()
@@ -29,24 +30,24 @@ class MainWindow(QWizard):
                 with open(self.__accounts_file, "r") as f:
                     accounts = json.load(f)
                 for k,v in accounts.items():
-                    self.__accounts[k] = modules.create_object(self, v)
-                    self.__accounts[k].setId(k)
-                    self.__accounts[k].initialize()
+                    self._accounts[k] = modules.create_object(self, v)
+                    self._accounts[k].setId(k)
+                    self._accounts[k].initialize()
             except Exception as e:
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
 
     def getSource(self, s):
         return self.__sources[s]
 
-    def __save_settings(self):
+    def _save_settings(self):
         s = {}
-        for k,v in self.__accounts.items():
+        for k,v in self._accounts.items():
             s[k] = v.getType()
         os.makedirs(os.path.dirname(self.__accounts_file), 0o700, True)
         with open(self.__accounts_file, "w") as f:
             json.dump(s, f)
 
-    def __bogus_module(self, module_name):
+    def _bogus_module(self, module_name):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
@@ -161,7 +162,7 @@ class MainWindow(QWizard):
 
         playlists = source.getPlaylists()
         if not playlists or len(playlists) == 0:
-            self.__bogus_module(source.getName())
+            self._bogus_module(source.getName())
             return
         self.findChild(QLabel, sourceName + "SourceLabel").setText("Selected source: " + source.getName())
         self.__sources[sourceName] = source
@@ -174,57 +175,11 @@ class MainWindow(QWizard):
         playlistSelect.setDisabled(False)
         self.findChild(QLabel, source_name + "PlaylistLabel").setDisabled(False)
 
-    def __add_account(self, sourceDialog, sourcesList, accountsList):
-        module_name = sourcesList.currentItem().text()
-        module_slug = sourcesList.currentItem().slug
-
-        if not module_slug in modules.modules:
-            self.__bogus_module(module_name)
-            return
-
-        source = modules.create_object(self, module_slug)
-
-        if not source.authenticate(self):
-            return False
-
-        if source.getId() in self.__accounts.keys():
-            errorMsg = QMessageBox(QMessageBox.Critical, "Account already exists", "This account already exists. Please delete it first.", QMessageBox.Ok, self)
-            errorMsg.show()
-            return
-        self.__accounts[source.getId()] = source
-
-        accountItem = QListWidgetItem(source.getName())
-        accountItem.source = source
-        accountsList.addItem(accountItem)
-        sourceDialog.close()
-        self.__save_settings()
-
     def __source_select(self, accountsList):
-        sourceDialog = QDialog(self)
-        sourceDialog.setWindowTitle("muSync - Sources")
-        sourceDialog.setModal(True)
-        dialogLayout = QVBoxLayout(sourceDialog)
-        sourcesList = QListWidget()
-        dialogLayout.addWidget(sourcesList)
-        buttonsLayout = QHBoxLayout()
-        okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Ok")
-        okButton.clicked.connect(lambda: self.__add_account(sourceDialog, sourcesList, accountsList))
-        okButton.setDisabled(True)
-        buttonsLayout.addWidget(okButton)
-        cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
-        cancelButton.clicked.connect(sourceDialog.close)
-        buttonsLayout.addWidget(cancelButton)
-        dialogLayout.addLayout(buttonsLayout)
-        for source in modules.modules.items():
-            sourceItem = QListWidgetItem(source[1])
-            sourceItem.slug = source[0]
-            sourcesList.addItem(sourceItem)
-        sourcesList.itemSelectionChanged.connect(lambda: okButton.setDisabled(True if sourcesList.selectedIndexes() == [] else False))
-        sourcesList.itemDoubleClicked.connect(lambda: self.__add_account(sourceDialog, sourcesList, accountsList))
-        sourceDialog.show()
+        sourceDialog = SourcesDialog(accountsList)
 
     def __del_account (self, source_name, accountsDialog, accountsList, sourceName):
-        del self.__accounts[accountsList.selectedItems()[0].source.getId()]
+        del self._accounts[accountsList.selectedItems()[0].source.getId()]
         accountsList.selectedItems()[0].source.deleteAccount()
         accountsList.takeItem(accountsList.currentRow())
         self.__save_settings()
@@ -262,7 +217,7 @@ class MainWindow(QWizard):
         accountsList.itemSelectionChanged.connect(lambda: okButton.setDisabled(True if accountsList.selectedIndexes() == [] else False))
         accountsList.itemSelectionChanged.connect(lambda: delButton.setDisabled(True if accountsList.selectedIndexes() == [] else False))
 
-        for account in self.__accounts.values():
+        for account in self._accounts.values():
             sourceItem = QListWidgetItem(account.getName())
             sourceItem.source = account
             accountsList.addItem(sourceItem)
