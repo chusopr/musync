@@ -14,9 +14,10 @@ class SourceModule(modules.SourceModule):
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
 
     def initialize(self):
-        self.__username = re.sub(r"lastfm-", "", self.__id)
-        self.__id = "lastfm-{}".format(self.__username)
-        self.__name = "{}'s Last.fm account".format(self.__username)
+        if not self.__id == "lastfm":
+            self.__username = re.sub(r"lastfm-", "", self.__id)
+            self.__id = "lastfm-{}".format(self.__username)
+            self.__name = "{}'s Last.fm account".format(self.__username)
 
     def __http_debug(self):
         import http.client as http_client
