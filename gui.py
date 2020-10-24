@@ -3,19 +3,13 @@ from PyQt5.QtGui import QIcon, QColor
 from datetime import datetime
 import re, modules, icu, threading, cgi, json, os
 from wizard.page1 import Page1
-from dialogs.accounts import AccountsDialog
 from appdirs import user_config_dir
 from sys import stderr
 
 class MainWindow(QWizard):
-    __sources = {
+    _sources = {
         "left":  None,
         "right": None
-    }
-    __threads = {
-        "left": None,
-        "right": None,
-        "compare": None
     }
     __accounts_file = os.path.join(user_config_dir("musync"), "accounts.json")
     __log = None
@@ -37,7 +31,7 @@ class MainWindow(QWizard):
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
 
     def getSource(self, s):
-        return self.__sources[s]
+        return self._sources[s]
 
     def _save_settings(self):
         s = {}
@@ -51,7 +45,7 @@ class MainWindow(QWizard):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
-    def __compare_playlists(self):
+    def _compare_playlists(self):
         self.page(0).setCompleted(False)
         lList = self.findChild(QListWidget, "leftTracklist")
         rList = self.findChild(QListWidget, "rightTracklist")
@@ -72,10 +66,10 @@ class MainWindow(QWizard):
                     self._status_updated('Song <span style="color: #00be00">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> found as <span style="color: #00be00">{}</span> in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                         cgi.escape(l.text()),
                         cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
-                        cgi.escape(self.__sources["left"].getName()),
+                        cgi.escape(self._sources["left"].getName()),
                         cgi.escape(r.text()),
                         cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
-                        cgi.escape(self.__sources["right"].getName())
+                        cgi.escape(self._sources["right"].getName())
                     ), False)
                     break
             if not found:
@@ -83,9 +77,9 @@ class MainWindow(QWizard):
                 self._status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                     cgi.escape(l.text()),
                     cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
-                    cgi.escape(self.__sources["left"].getName()),
+                    cgi.escape(self._sources["left"].getName()),
                     cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
-                    cgi.escape(self.__sources["right"].getName())
+                    cgi.escape(self._sources["right"].getName())
                 ), False)
 
         # FIXME: Should only be run when both tracklists finished downloading
@@ -99,59 +93,10 @@ class MainWindow(QWizard):
                 self._status_updated('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
                     cgi.escape(r.text()),
                     cgi.escape(self.findChild(QComboBox, "rightPlaylist").currentText()),
-                    cgi.escape(self.__sources["right"].getName()),
+                    cgi.escape(self._sources["right"].getName()),
                     cgi.escape(self.findChild(QComboBox, "leftPlaylist").currentText()),
-                    cgi.escape(self.__sources["left"].getName())
+                    cgi.escape(self._sources["left"].getName())
                 ), False)
-
-    def __load_tracks(self, source_name):
-        self.page(0).setCompleted(False)
-        current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
-
-        # No playlist actually selected
-        if current_playlist == None:
-            return
-
-        # Get tracks for the current playlist
-        tracks = self.__sources[source_name].getTracks(current_playlist)
-        # No tracks returned for the current playlist. Do nothing.
-        # TODO Should we do something? Maybe show an error message
-        if not tracks:
-            return
-
-        # Add tracks to the tracklist in the main window
-        trackList = self.findChild(QListWidget, source_name + "Tracklist")
-        # Remove any entry from the previous playlist first
-        while trackList.count() > 0:
-            trackList.takeItem(0)
-        # Now add the tracks
-        for t in tracks:
-            QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList).track = t
-
-        # Check if the other playlist is also set to compare both
-        if self.findChild(QComboBox, "{}Playlist".format("left" if source_name == "right" else "right")).currentData() is not None:
-            thread = threading.Thread(target=self.__compare_playlists)
-            self.__threads["compare"] = thread
-            thread.start()
-
-    def _playlist_select(self, source_name):
-        self.page(0).setCompleted(False)
-        for t in [source_name, "compare"]:
-            # Stop any thread running on this source
-            if self.__threads[t] is not None and self.__threads[t].isAlive():
-                # TODO: for now we just wait for the thread to finish instead of stopping it
-                self.__threads[t].join()
-
-        # Remove links in the other tracklist to the ones in this one being removed
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if source_name is "left" else "left"))
-        for i in range(otherList.count()):
-            peer = otherList.item(i)
-            if "peer" in peer.track:
-                del peer.track["peer"]
-
-        thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
-        self.__threads[source_name] = thread
-        thread.start()
 
     def _change_account(self, source_name, accountsList):
         self.page(0).setCompleted(False)
@@ -165,7 +110,7 @@ class MainWindow(QWizard):
             self._bogus_module(source.getName())
             return
         self.findChild(QLabel, source_name + "SourceLabel").setText("Selected source: " + source.getName())
-        self.__sources[source_name] = source
+        self._sources[source_name] = source
         playlistSelect = self.findChild(QComboBox, source_name + "Playlist")
         playlistSelect.clear()
         playlistSelect.addItem("")
@@ -173,29 +118,6 @@ class MainWindow(QWizard):
             playlistSelect.addItem(playlist["name"], playlist["id"])
         playlistSelect.setDisabled(False)
         self.findChild(QLabel, source_name + "PlaylistLabel").setDisabled(False)
-
-    def _account_select(self, source_name):
-        source_modules = modules.listAll()
-        if len(source_modules) == 0:
-            errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source modules found", QMessageBox.Ok, self)
-            errorMsg.show()
-            return
-
-        sourceName = re.sub(r"SourceBtn$", "", self.sender().objectName())
-        accountsDialog = AccountsDialog(self, source_name)
-
-    def _track_select(self, item):
-        thisList = item.listWidget()
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
-
-        # If this track doesn't have a peer in the other tracklist, just finish
-        if 'peer' not in item.track:
-            otherList.setCurrentItem(None)
-            return
-
-        otherItem = otherList.item(item.track["peer"])
-        otherItem.setSelected(True)
-        otherList.scrollToItem(otherItem)
 
     def __start_sync(self):
         if not (self.sources["left"] and self.sources["right"] and self.playlists["left"] and self.playlists["right"]):
@@ -231,14 +153,14 @@ class MainWindow(QWizard):
         self._status_updated('Song <span style="color: #00be00">{}</span> queued to be added to tracklist <strong>{}</strong> in <strong>{}</strong>'.format(
             cgi.escape(destTrack.text()),
             cgi.escape(self.findChild(QComboBox, "{}Playlist".format(destination)).currentText()),
-            cgi.escape(self.__sources[destination].getName())
+            cgi.escape(self._sources[destination].getName())
         ), False)
         tracksDialog.close()
 
     def __search_song(self, source, destination):
         sTrackList = self.findChild(QListWidget, "{}Tracklist".format(source))
         t = sTrackList.selectedItems()[0]
-        search_results = self.__sources[destination].searchTrack(t.track)
+        search_results = self._sources[destination].searchTrack(t.track)
 
         tracksDialog = QDialog(self)
         tracksDialog.setWindowTitle("muSync - {} - {}".format(t.track["artist"], t.track["title"]))
