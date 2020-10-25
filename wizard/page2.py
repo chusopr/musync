@@ -29,7 +29,6 @@ class Page2(WizardPage):
             "left": self.parent().parent().parent().getSource("left"),
             "right": self.parent().parent().parent().getSource("right")
         }
-        # TODO: use a similar approach for colouring the previous page, which must be more efficient
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():
             if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):

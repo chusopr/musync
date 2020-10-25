@@ -38,13 +38,12 @@ class SourceModule(modules.SourceModule):
     def isAuthenticated(self):
         return self.__username is not None
 
-    def authenticate(self, window, force=False):
+    def authenticate(self, force=False):
         if self.__username is not None:
             return True
         authDialog = AuthDialog(self.__api_key)
         if authDialog.exec() == QDialog.Accepted:
             self.__id = "lastfm-{}".format(authDialog.getUser())
-            print(self.__id)
             self.initialize()
             return True
         return False
@@ -84,10 +83,10 @@ class SourceModule(modules.SourceModule):
             for t in playlist["{}tracks".format(playlist_name)]["track"]:
                 tracks.append(self.__track_metadata(t))
             total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
-            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
+            self.status.emit("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
             current_page = current_page + 1
 
-        self.__main.statusBar().showMessage("Finished loading tracks")
+        self.status.emit("Finished loading tracks")
 
         return tracks
 
@@ -104,7 +103,7 @@ class SourceModule(modules.SourceModule):
             ))
 
             if search_request.status_code != 200:
-                self.__main.statusBar().showMessage("Error searching for tracks")
+                self.status.emit("Error searching for tracks")
                 break
 
             search_results = json.loads(search_request.text)
@@ -130,7 +129,7 @@ class SourceModule(modules.SourceModule):
             for t in playlist["{}tracks".format(playlist_name)]["track"]:
                 tracks.append(self.__track_metadata(t))
             total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
-            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
+            self.status.emit("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
             current_page = current_page + 1
 
         return tracks
@@ -143,7 +142,7 @@ class SourceModule(modules.SourceModule):
         #))
 
         #if search_request.status_code != 200:
-            #self.__main.statusBar().showMessage("Error searching for tracks")
+            #self.status.emit("Error searching for tracks")
             #break
 
         #search_results = json.loads(search_request.text)

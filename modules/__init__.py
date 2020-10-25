@@ -1,15 +1,17 @@
 import os, importlib.util, traceback, sys, re
 from types import ModuleType
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from sys import stderr
+from PyQt5.QtCore import pyqtSignal, QObject
 
 ModulesFolder = "modules"
 ModuleMain = "__init__"
 
-class SourceModule(ABC):
+class SourceModule(QObject):
+    status = pyqtSignal(str)
 
-    def __init__(self, main):
-        self.__main = main
+    def __init__(self):
+        super().__init__()
         self.__id = re.sub(r"%s." % ModulesFolder, "", self.__module__)
         #@final
         self.__type = re.sub(r"%s." % ModulesFolder, "", self.__module__)
@@ -56,16 +58,16 @@ class SourceModule(ABC):
 
 modules = {}
 
-def create_object(main, mod):
+def create_object(mod):
         spec = importlib.util.find_spec(ModulesFolder + "." + mod)
         module = ModuleType(spec.name)
         module.__spec__ = spec
         spec.loader.exec_module(module)
-        m = module.SourceModule(main)
+        m = module.SourceModule()
         m.initialize()
         return m
 
-def load(main):
+def load():
     for m in os.listdir(ModulesFolder):
         m_dir = os.path.join(ModulesFolder, m)
         if not os.path.isdir(m_dir) or not os.path.isfile(os.path.join(m_dir, ModuleMain + ".py")):

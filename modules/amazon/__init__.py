@@ -155,7 +155,7 @@ class SourceModule(modules.SourceModule):
             "deviceId"       in self.__amzn and
             "customerId"     in self.__amzn
         ):
-            if not self.authenticate(window=None, force=True):
+            if not self.authenticate(force=True):
                 return None
 
         headers = {
@@ -192,7 +192,7 @@ class SourceModule(modules.SourceModule):
         track["genre"]    = d["primaryGenre"] if "primaryGenre" in d and d["primaryGenre"] != "Unknown Genre" else ""
         return track
 
-    def authenticate(self, window, force=False):
+    def authenticate(self, force=False):
 
         if self.__authenticated and not force:
             return True
@@ -209,7 +209,7 @@ class SourceModule(modules.SourceModule):
             except TimeoutException:
                 pass
             except WebDriverException as e:
-                self.__main.statusBar().showMessage(e)
+                self.status.emit(e)
                 break
 
         if not element:
@@ -278,7 +278,7 @@ class SourceModule(modules.SourceModule):
         if playlist == 'my-music':
             nextResultsToken = 0
             while nextResultsToken is not None:
-                self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded ({} donwloaded).".format(nextResultsToken))
+                self.status.emit("Please wait while the list of songs is being downloaded ({} donwloaded).".format(nextResultsToken))
                 data = {
                     'maxResults': '100',
                     'nextResultsToken': nextResultsToken,
@@ -328,10 +328,10 @@ class SourceModule(modules.SourceModule):
                 else:
                     nextResultsToken = None
 
-            self.__main.statusBar().showMessage("Finished loading tracks")
+            self.status.emit("Finished loading tracks")
 
         else:
-            self.__main.statusBar().showMessage("Please wait while the list of songs is being downloaded")
+            self.status.emit("Please wait while the list of songs is being downloaded")
             data = {
                 "playlistIds": [playlist],
                 "requestedMetadata": [
@@ -362,7 +362,7 @@ class SourceModule(modules.SourceModule):
             for t in tracklist:
                 tracks.append(self.__track_metadata(t["metadata"]["requestedMetadata"]))
 
-            self.__main.statusBar().showMessage("Finished loading tracks")
+            self.status.emit("Finished loading tracks")
 
         return tracks
 
