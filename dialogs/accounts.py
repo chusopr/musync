@@ -10,7 +10,7 @@ class AccountsDialog(QDialog):
     account_deleted = pyqtSignal(str)
     account_selected = pyqtSignal(SourceModule)
 
-    def __del_account(self, source_name, accountsList):
+    def __del_account(self, accountsList):
         self.account_deleted.emit(accountsList.selectedItems()[0].source.getId())
         accountsList.selectedItems()[0].source.deleteAccount()
         accountsList.takeItem(accountsList.currentRow())
@@ -25,12 +25,12 @@ class AccountsDialog(QDialog):
         sourcesDialog = SourcesDialog(self, accounts)
         sourcesDialog.account_added.connect(self.__add_account)
 
-    def __select_account(self, source_name, accountsList):
+    def __select_account(self, accountsList):
         account = accountsList.selectedItems()[0].source
         self.account_selected.emit(account)
         self.close()
 
-    def __init__(self, accounts, source_name):
+    def __init__(self, accounts):
         super().__init__()
         self.setWindowTitle("muSync - Accounts")
         self.setModal(True)
@@ -46,11 +46,11 @@ class AccountsDialog(QDialog):
         addButton.clicked.connect(lambda: self.__show_modules(accounts))
         buttonsLayout.addWidget(addButton)
         delButton = QPushButton(QIcon.fromTheme("edit-delete"), "&Remove account")
-        delButton.clicked.connect(lambda: self.__del_account(source_name, accountsList))
+        delButton.clicked.connect(lambda: self.__del_account(accountsList))
         delButton.setDisabled(True)
         buttonsLayout.addWidget(delButton)
         okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Select source")
-        okButton.clicked.connect(lambda: self.__select_account(source_name, accountsList))
+        okButton.clicked.connect(lambda: self.__select_account(accountsList))
         okButton.setDisabled(True)
         buttonsLayout.addWidget(okButton)
         cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
@@ -65,5 +65,5 @@ class AccountsDialog(QDialog):
             sourceItem.source = account
             accountsList.addItem(sourceItem)
 
-        accountsList.itemDoubleClicked.connect(lambda: self.__select_account(source_name, accountsList))
+        accountsList.itemDoubleClicked.connect(lambda: self.__select_account(accountsList))
         self.show()

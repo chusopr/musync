@@ -63,57 +63,56 @@ class Page1(WizardPage):
         playlistSelect.setDisabled(False)
         self.findChild(QLabel, side + "PlaylistLabel").setDisabled(False)
 
-    def __account_select(self, source_name):
+    def __account_select(self, side):
         source_modules = modules.listAll()
         if len(source_modules) == 0:
             errorMsg = QMessageBox(QMessageBox.Critical, "No sources available", "No source modules found", QMessageBox.Ok, self)
             errorMsg.show()
             return
 
-        sourceName = re.sub(r"SourceBtn$", "", self.sender().objectName())
-        accountsDialog = AccountsDialog(self.__accounts, source_name)
+        accountsDialog = AccountsDialog(self.__accounts)
         accountsDialog.account_added.connect(self.__account_added)
         accountsDialog.account_deleted.connect(self.__account_deleted)
-        accountsDialog.account_selected.connect(lambda account: self.__account_selected(source_name, account))
+        accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
 
-    def __playlist_select(self, source_name):
+    def __playlist_select(self, side):
         self.setCompleted(False)
 
-        for t in [source_name, "compare"]:
+        for t in [side, "compare"]:
             # Stop any thread running on this source
             if self.__threads[t] is not None and self.__threads[t].isAlive():
                 # TODO: for now we just wait for the thread to finish instead of stopping it
                 self.__threads[t].join()
 
         # Remove links in the other tracklist to the ones in this one being removed
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if source_name is "left" else "left"))
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if side is "left" else "left"))
         for i in range(otherList.count()):
             peer = otherList.item(i)
             if "peer" in peer.track:
                 del peer.track["peer"]
 
-        thread = threading.Thread(target=self.__load_tracks, args=(source_name,))
-        self.__threads[source_name] = thread
+        thread = threading.Thread(target=self.__load_tracks, args=(side,))
+        self.__threads[side] = thread
         thread.start()
 
-    def __load_tracks(self, source_name):
+    def __load_tracks(self, side):
         self.setCompleted(False)
 
-        current_playlist = self.findChild(QComboBox, source_name + "Playlist").currentData()
+        current_playlist = self.findChild(QComboBox, side + "Playlist").currentData()
 
         # No playlist actually selected
         if current_playlist == None:
             return
 
         # Get tracks for the current playlist
-        tracks = self.__sources[source_name].getTracks(current_playlist)
+        tracks = self.__sources[side].getTracks(current_playlist)
         # No tracks returned for the current playlist. Do nothing.
         # TODO Should we do something? Maybe show an error message
         if not tracks:
             return
 
         # Add tracks to the tracklist in the main window
-        trackList = self.findChild(QListWidget, source_name + "Tracklist")
+        trackList = self.findChild(QListWidget, side + "Tracklist")
         # Remove any entry from the previous playlist first
         while trackList.count() > 0:
             trackList.takeItem(0)
@@ -122,7 +121,7 @@ class Page1(WizardPage):
             QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList).track = t
 
         # Check if the other playlist is also set to compare both
-        if self.findChild(QComboBox, "{}Playlist".format("left" if source_name == "right" else "right")).currentData() is not None:
+        if self.findChild(QComboBox, "{}Playlist".format("left" if side == "right" else "right")).currentData() is not None:
             thread = threading.Thread(target=self.__compare_playlists)
             self.__threads["compare"] = thread
             thread.start()
@@ -200,32 +199,32 @@ class Page1(WizardPage):
         otherItem.setSelected(True)
         otherList.scrollToItem(otherItem)
 
-    def __create_source_layout(self, source_name):
+    def __create_source_layout(self, side):
         sourceLayout = QVBoxLayout()
         selectedSourceLayout = QHBoxLayout()
         sourceLabel = QLabel("Selected source: None")
-        sourceLabel.setObjectName(source_name + "SourceLabel")
+        sourceLabel.setObjectName(side + "SourceLabel")
         selectedSourceLayout.addWidget(sourceLabel, 1)
         changeSourceBtn = QPushButton("Change...")
-        changeSourceBtn.setObjectName(source_name + "SourceBtn")
-        changeSourceBtn.clicked.connect(lambda: self.__account_select(source_name))
+        changeSourceBtn.setObjectName(side + "SourceBtn")
+        changeSourceBtn.clicked.connect(lambda: self.__account_select(side))
         selectedSourceLayout.addWidget(changeSourceBtn)
         playlistLabel = QLabel("Selected playlist:")
-        playlistLabel.setObjectName(source_name + "PlaylistLabel")
+        playlistLabel.setObjectName(side + "PlaylistLabel")
         playlistLabel.setDisabled(True)
         selectedSourceLayout.addWidget(playlistLabel)
         playlistSelect = QComboBox()
         playlistSelect.setDisabled(True)
-        playlistSelect.setObjectName(source_name + "Playlist")
-        playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(source_name))
+        playlistSelect.setObjectName(side + "Playlist")
+        playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(side))
         selectedSourceLayout.addWidget(playlistSelect, 1)
         sourceLayout.addLayout(selectedSourceLayout)
 
         trackList = QListWidget()
-        trackList.setObjectName(source_name + "Tracklist")
+        trackList.setObjectName(side + "Tracklist")
         trackList.itemClicked.connect(self.__track_select)
         sourceLayout.addWidget(trackList)
-        return (sourceLayout, playlistSelect, trackList, changeSourceBtn)
+        return sourceLayout
 
     def __load_accounts(self):
         if (os.path.isfile(self.__accounts_file)):
@@ -246,10 +245,8 @@ class Page1(WizardPage):
         sourcesLayout = QHBoxLayout()
         page1Layout.addLayout(sourcesLayout)
 
-        leftLayout, leftPlaylist, leftTracklist, leftSourceBtn = self.__create_source_layout("left")
-        sourcesLayout.addLayout(leftLayout)
-        rightLayout, rightPlaylist, rightTracklist, rightSourceBtn = self.__create_source_layout("right")
-        sourcesLayout.addLayout(rightLayout)
+        sourcesLayout.addLayout(self.__create_source_layout("left"))
+        sourcesLayout.addLayout(self.__create_source_layout("right"))
 
         page2 = Page2()
         self.__parent.addPage(self)
