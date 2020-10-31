@@ -1,8 +1,11 @@
 from PyQt5.QtWidgets import QWizard, QWizardPage
+from PyQt5.QtCore import pyqtSignal
 from abc import abstractmethod
 
 class WizardPage(QWizardPage):
     __completed = False
+    status = pyqtSignal(str)
+    log = pyqtSignal(str)
 
     @abstractmethod
     def update(self):

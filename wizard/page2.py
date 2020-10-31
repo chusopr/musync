@@ -26,8 +26,8 @@ class Page2(WizardPage):
 
         lPos = rPos = 0
         sources = {
-            "left": self.parent().parent().parent().getSource("left"),
-            "right": self.parent().parent().parent().getSource("right")
+            "left": self.parent().parent().parent().page(0).getSource("left"),
+            "right": self.parent().parent().parent().page(0).getSource("right")
         }
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():

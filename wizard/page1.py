@@ -5,7 +5,6 @@ import modules
 
 from PyQt5.QtWidgets import QMessageBox, QWizard, QVBoxLayout, QHBoxLayout, QStatusBar, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PyQt5.QtGui import QColor
-from PyQt5.QtCore import pyqtSignal
 import cgi, icu, json, os, re, threading
 from appdirs import user_config_dir
 from sys import stderr
@@ -22,8 +21,6 @@ class Page1(WizardPage):
         "left":  None,
         "right": None
     }
-    status = pyqtSignal(str)
-    log = pyqtSignal(str)
 
     def __save_settings(self):
         s = {}
@@ -238,6 +235,9 @@ class Page1(WizardPage):
                     self.__accounts[k].status.connect(self.status.emit)
             except Exception as e:
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
+
+    def getSource(self, s):
+        return self._sources[s]
 
     def __build_ui(self):
         page1Layout = QVBoxLayout(self)
