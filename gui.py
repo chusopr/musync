@@ -9,6 +9,7 @@ from sys import stderr
 
 class MainWindow(QWizard):
     __log = None
+    __status = None
 
     def __init__(self):
         super().__init__()
@@ -21,23 +22,19 @@ class MainWindow(QWizard):
 
     def __add_log(self, msg, escape=True):
         if self.__log is not None:
-            log = self.__log.findChild(QTextBrowser, "log")
-            log.append('<span style="color: #bebebe">{} - </span>{}'.format(datetime.now(), cgi.escape(msg) if escape else msg))
-            if self.__log.findChild(QCheckBox, "autoscroll").isChecked():
-                log.verticalScrollBar().setValue(log.verticalScrollBar().maximum())
+            self.__log.append('<span style="color: #bebebe">{} - </span>{}'.format(datetime.now(), cgi.escape(msg) if escape else msg))
 
     def __page_changed(self):
         if self.currentPage() is not None:
-            self.currentPage().children()[0].addWidget(self.findChild(QStatusBar, "statusBar"))
+            self.currentPage().children()[0].addWidget(self.__status)
             self.currentPage().update()
-            self.currentPage().status.connect(self.findChild(QStatusBar, "statusBar").showMessage)
+            self.currentPage().status.connect(self.__status.showMessage)
 
     def buildUI(self):
         Page1(self).log.connect(lambda msg: self.__add_log(msg, False))
 
-        statusBar = QStatusBar(self)
-        statusBar.setObjectName("statusBar")
-        statusBar.messageChanged.connect(self.__add_log)
+        self.__status = QStatusBar(self)
+        self.__status.messageChanged.connect(self.__add_log)
 
         self.__log = LogDialog(self)
 

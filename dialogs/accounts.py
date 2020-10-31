@@ -6,7 +6,6 @@ from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 
 class AccountsDialog(QDialog):
-    __source_name = None
     account_added = pyqtSignal(SourceModule)
     account_deleted = pyqtSignal(str)
     account_selected = pyqtSignal(SourceModule)
