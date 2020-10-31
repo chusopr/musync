@@ -7,7 +7,7 @@ from PyQt5.QtCore import pyqtSignal
 class SourcesDialog(QDialog):
     account_added = pyqtSignal(modules.SourceModule)
 
-    def __add_account(self, sourceDialog, sourcesList, accountsList):
+    def __add_account(self, sourcesList, accountsList):
         module_name = sourcesList.currentItem().text()
         module_slug = sourcesList.currentItem().slug
 
@@ -26,23 +26,22 @@ class SourcesDialog(QDialog):
             return
 
         self.account_added.emit(source)
-        sourceDialog.close()
+        self.close()
 
     def __init__(self, parent, accountsList):
         super().__init__()
-        sourceDialog = QDialog(parent)
-        sourceDialog.setWindowTitle("muSync - Sources")
-        sourceDialog.setModal(True)
-        dialogLayout = QVBoxLayout(sourceDialog)
+        self.setWindowTitle("muSync - Sources")
+        self.setModal(True)
+        dialogLayout = QVBoxLayout(self)
         sourcesList = QListWidget()
         dialogLayout.addWidget(sourcesList)
         buttonsLayout = QHBoxLayout()
         okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Ok")
-        okButton.clicked.connect(lambda: self.__add_account(sourceDialog, sourcesList, accountsList))
+        okButton.clicked.connect(lambda: self.__add_account(sourcesList, accountsList))
         okButton.setDisabled(True)
         buttonsLayout.addWidget(okButton)
         cancelButton = QPushButton(QIcon.fromTheme("dialog-cancel"), "&Cancel")
-        cancelButton.clicked.connect(sourceDialog.close)
+        cancelButton.clicked.connect(self.close)
         buttonsLayout.addWidget(cancelButton)
         dialogLayout.addLayout(buttonsLayout)
         for source in modules.modules.items():
@@ -50,6 +49,6 @@ class SourcesDialog(QDialog):
             sourceItem.slug = source[0]
             sourcesList.addItem(sourceItem)
         sourcesList.itemSelectionChanged.connect(lambda: okButton.setDisabled(True if sourcesList.selectedIndexes() == [] else False))
-        sourcesList.itemDoubleClicked.connect(lambda: self.__add_account(sourceDialog, sourcesList, accountsList))
-        sourceDialog.show()
+        sourcesList.itemDoubleClicked.connect(lambda: self.__add_account(self, sourcesList, accountsList))
+        self.show()
 
