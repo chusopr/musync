@@ -3,7 +3,7 @@ from wizard.page2 import Page2
 from dialogs.accounts import AccountsDialog
 import modules
 
-from PyQt5.QtWidgets import QMessageBox, QWizard, QVBoxLayout, QHBoxLayout, QStatusBar, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PyQt5.QtGui import QColor
 import cgi, icu, json, os, re, threading
 from appdirs import user_config_dir

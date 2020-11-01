@@ -1,6 +1,4 @@
-from PyQt5.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QDialog, QLineEdit, QDialogButtonBox, QMessageBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QPixmap
+from PyQt5.QtWidgets import QMessageBox
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException, TimeoutException
 from urllib.parse import urlparse

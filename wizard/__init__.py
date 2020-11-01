@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QWizard, QWizardPage
+from PyQt5.QtWidgets import QWizardPage
 from PyQt5.QtCore import pyqtSignal
 from abc import abstractmethod
 

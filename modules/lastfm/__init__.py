@@ -1,4 +1,4 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QHBoxLayout, QLineEdit, QDialogButtonBox, QMessageBox
+from PyQt5.QtWidgets import QDialog
 import requests, modules, json, os, re
 from appdirs import user_cache_dir
 from math import ceil

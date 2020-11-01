@@ -1,7 +1,7 @@
 from dialogs.sources import SourcesDialog
 from modules import SourceModule
 
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QPushButton, QComboBox
+from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
 from PyQt5.QtGui import QIcon
 from PyQt5.QtCore import pyqtSignal
 

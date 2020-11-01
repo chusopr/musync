@@ -1,10 +1,8 @@
 from wizard.page1 import Page1
 from dialogs.log import LogDialog
 
-from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QScrollArea
-from PyQt5.QtGui import QIcon, QColor
-import re, modules, threading, cgi, json, os
-from sys import stderr
+from PyQt5.QtWidgets import QWizard, QMessageBox, QStatusBar
+import modules, cgi
 
 class MainWindow(QWizard):
     __log = None
