@@ -20,6 +20,7 @@ class Page2(WizardPage):
         songs_table = self.findChild(QGridLayout, "songs_table")
         if songs_table:
             songs_table.deleteLater()
+            del songs_table
         songs_table = QGridLayout()
         songs_table.setObjectName("songs_table")
         scroll_client.setLayout(songs_table)

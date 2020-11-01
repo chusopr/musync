@@ -24,6 +24,7 @@ class AccountsDialog(QDialog):
     def __show_modules(self, accounts):
         sourcesDialog = SourcesDialog(self, accounts)
         sourcesDialog.account_added.connect(self.__add_account)
+        del sourcesDialog
 
     def __select_account(self, accountsList):
         account = accountsList.selectedItems()[0].source

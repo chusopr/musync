@@ -71,6 +71,7 @@ class Page1(WizardPage):
         accountsDialog.account_added.connect(self.__account_added)
         accountsDialog.account_deleted.connect(self.__account_deleted)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
+        del accountsDialog
 
     def __playlist_select(self, side):
         self.setCompleted(False)
