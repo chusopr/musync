@@ -49,6 +49,6 @@ class SourcesDialog(QDialog):
             sourceItem.slug = source[0]
             sourcesList.addItem(sourceItem)
         sourcesList.itemSelectionChanged.connect(lambda: okButton.setDisabled(True if sourcesList.selectedIndexes() == [] else False))
-        sourcesList.itemDoubleClicked.connect(lambda: self.__add_account(self, sourcesList, accountsList))
+        sourcesList.itemDoubleClicked.connect(lambda: self.__add_account(sourcesList, accountsList))
         self.show()
 
