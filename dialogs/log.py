@@ -1,5 +1,6 @@
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
 from PyQt5.QtGui import QIcon
+from datetime import datetime
 
 class LogDialog(QDialog):
     __log = None
@@ -40,4 +41,6 @@ class LogDialog(QDialog):
         logLayout.addLayout(buttonsLayout)
 
     def append(self, s):
-        self.__log.append(s)
+        datestr = str(datetime.now())
+        self.__log.append('<span style="color: #bebebe">{} - </span>{}'.format(datestr, s))
+        return self.__log.document().lastBlock().text()[len(datestr)+3:]

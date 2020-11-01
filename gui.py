@@ -3,7 +3,6 @@ from dialogs.log import LogDialog
 
 from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QHBoxLayout, QListWidget, QPushButton, QLabel, QComboBox, QDialog, QMessageBox, QListWidgetItem, QStatusBar, QTextBrowser, QCheckBox, QScrollArea
 from PyQt5.QtGui import QIcon, QColor
-from datetime import datetime
 import re, modules, threading, cgi, json, os
 from sys import stderr
 
@@ -22,13 +21,13 @@ class MainWindow(QWizard):
 
     def __add_log(self, msg, escape=True):
         if self.__log is not None:
-            self.__log.append('<span style="color: #bebebe">{} - </span>{}'.format(datetime.now(), cgi.escape(msg) if escape else msg))
+            return self.__log.append(cgi.escape(msg) if escape else msg)
 
     def __page_changed(self):
         if self.currentPage() is not None:
             self.currentPage().children()[0].addWidget(self.__status)
             self.currentPage().update()
-            self.currentPage().status.connect(self.__status.showMessage)
+            self.currentPage().status.connect(lambda s: self.__status.showMessage(self.__add_log(s, True)))
 
     def buildUI(self):
         Page1(self).log.connect(lambda msg: self.__add_log(msg, False))
