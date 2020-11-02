@@ -3,11 +3,14 @@ from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
 from PyQt5.QtCore import pyqtSignal, QObject
+from appdirs import user_cache_dir
 
 ModulesFolder = "modules"
 ModuleMain = "__init__"
 
 class SourceModule(QObject):
+    __id = None
+    __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
     status = pyqtSignal(str)
 
     def __init__(self):
@@ -19,6 +22,9 @@ class SourceModule(QObject):
             self.__name
         except AttributeError:
             self.__name = self.__id
+
+    def __set_session_file(self):
+        self.__session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(self.__id))
 
     def getId(self):
         return self.__id

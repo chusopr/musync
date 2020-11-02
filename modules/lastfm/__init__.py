@@ -1,17 +1,56 @@
-from PyQt5.QtWidgets import QDialog
-import requests, modules, json, os, re
-from appdirs import user_cache_dir
-from math import ceil
 from modules.lastfm.auth import AuthDialog
+
+from PyQt5.QtWidgets import QDialog
+from selenium import webdriver
+from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
+import requests, modules, json, os, re
+from math import ceil
+
+class lastfm_createform_ready(object):
+    def __call__(self, driver):
+        if driver.current_url == "https://www.last.fm/api/account/create" and driver.find_element_by_id("id_name"):
+            return driver.execute_script('return document.getElementById("id_name").form;')
+        return False
+
+class lastfm_apitable_ready(object):
+    def __call__(self, driver):
+        try:
+            return driver.find_element_by_class_name("auth-dropdown-menu-item") and driver.find_element_by_class_name("api-details-table")
+        except NoSuchElementException:
+            return False
 
 class SourceModule(modules.SourceModule):
     __id = "lastfm"
     __name = "Last.fm"
+    __authenticated = False
     # Get your API key from https://www.last.fm/api/account/create
-    __api_key = ""
+    __api_key = None
+
+    __webdriver = None
+    __login_url = "https://last.fm/api/account/create"
+    __chromedriver_path = "/usr/bin/chromedriver"
 
     __username = None
-    __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
+
+    def initialize(self):
+        self.__set_session_file()
+        if (os.path.isfile(self.__session_file)):
+            try:
+                with open(self.__session_file, "r") as f:
+                    self__username, self.__api_key = json.load(f)
+                self.__id = "lastfm-{}".format(self.__username)
+                self.__name = "{}'s Last.fm account".format(self.__username)
+                self.__authenticated = True
+            except Exception as e:
+                print("Need to re-authenticate: {}".format(str(e)))
+
+    def __save_cache(self):
+        try:
+            os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
+            with open(self.__session_file, "w") as f:
+                json.dump([self.__username, self.__api_key], f)
+        except Exception as e:
+            print("Failed to cache session data: {}".format(str(e)))
 
     def initialize(self):
         if not self.__id == "lastfm":
@@ -36,17 +75,84 @@ class SourceModule(modules.SourceModule):
         return track
 
     def isAuthenticated(self):
-        return self.__username is not None
+        return self.__authenticated
 
     def authenticate(self, force=False):
-        if self.__username is not None:
+        if self.__authenticated and not force:
             return True
-        authDialog = AuthDialog(self.__api_key)
-        if authDialog.exec() == QDialog.Accepted:
-            self.__id = "lastfm-{}".format(authDialog.getUser())
-            self.initialize()
-            return True
-        return False
+
+        if self.__webdriver == None:
+            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+        self.__webdriver.get(self.__login_url)
+
+        create_form = False
+        while not create_form:
+            try:
+                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
+                create_form = wait.until(lastfm_createform_ready())
+            except TimeoutException:
+                pass
+            except WebDriverException as e:
+                self.status.emit(e)
+                break
+
+        if not create_form:
+            self.__webdriver.quit()
+            self.__webdriver = None
+            self.__authenticated = False
+            return False
+
+        name_element = self.__webdriver.find_element_by_id("id_name")
+
+        try:
+            homepage_element = self.__webdriver.find_element_by_id("id_homepage")
+            if homepage_element:
+                homepage_element.send_keys("https://musync.link")
+        except:
+            pass
+
+        name_element.send_keys("muSync")
+
+        create_form.submit()
+
+        api_details = False
+        while not api_details:
+            try:
+                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
+                api_details = wait.until(lastfm_apitable_ready())
+            except TimeoutException:
+                pass
+            except WebDriverException as e:
+                self.status.emit(e)
+                break
+
+        self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("auth-dropdown-menu-item")[0].children[0].textContent;')
+        self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
+
+        try:
+            unserinfo_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+            if unserinfo_request.status_code != 200:
+                return False # do something
+            userinfo = json.loads(unserinfo_request.text)
+        except:
+            pass
+
+        if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
+            return False # do something
+
+        self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
+        self.__id = "lastfm-{}".format(self.__username)
+
+        self.__set_session_file()
+
+        self.__save_cache()
+
+        if self.__webdriver is not None:
+            self.__webdriver.quit()
+            self.__webdriver = None
+        self.__authenticated = True
+
+        return True
 
     def getPlaylists(self):
         return [

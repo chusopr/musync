@@ -3,7 +3,6 @@ from selenium import webdriver
 from selenium.common.exceptions import WebDriverException, TimeoutException
 from urllib.parse import urlparse
 import requests, modules, json
-from appdirs import user_cache_dir
 import os, re
 
 class amzn_object_exists(object):
@@ -24,9 +23,6 @@ class SourceModule(modules.SourceModule):
     __domain = "music.amazon.com"
     # TODO: Support other browsers
     __chromedriver_path = "/usr/bin/chromedriver"
-
-    def __set_session_file(self):
-        self.__session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(self.__id))
 
     def initialize(self):
         self.__set_session_file()
@@ -115,7 +111,6 @@ class SourceModule(modules.SourceModule):
         return track
 
     def authenticate(self, force=False):
-
         if self.__authenticated and not force:
             return True
 
