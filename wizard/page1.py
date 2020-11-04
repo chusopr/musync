@@ -131,8 +131,7 @@ class Page1(WizardPage):
 
         lPos = rPos = 0
         while lPos < lList.count() or rPos < rList.count():
-            # FIXME progress is not really meaningful
-            self.status.emit("Comparing tracklists ({} % completed).".format(int(max(lPos, rPos)*100/max(lList.count(), rList.count()))))
+            self.status.emit("Comparing tracklists ({} % completed).".format(int((lPos+rPos)*100/(lList.count()+rList.count()))))
             if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
                 thisList = lList
                 otherList = rList
