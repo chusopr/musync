@@ -42,6 +42,10 @@ class SourceModule(QObject):
         return False
 
     @abstractmethod
+    def initialize(self):
+        pass
+
+    @abstractmethod
     def getPlaylists(self):
         pass
 
