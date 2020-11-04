@@ -224,7 +224,7 @@ class SourceModule(modules.SourceModule):
                     'csrf-token': self.__amzn["csrf_token"],
                     'csrf-ts': self.__amzn["csrf_ts"]
                 }
-                tracks_request = self.__session.post("https://music.amazon.co.uk/cirrus/", data=data, headers=headers)
+                tracks_request = self.__session.post("https://{}/cirrus/".format(self.__domain), data=data, headers=headers)
 
                 if tracks_request.status_code != 200:
                     return False
