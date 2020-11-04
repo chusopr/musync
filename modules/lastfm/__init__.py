@@ -32,18 +32,6 @@ class SourceModule(modules.SourceModule):
 
     __username = None
 
-    def initialize(self):
-        self.__set_session_file()
-        if (os.path.isfile(self.__session_file)):
-            try:
-                with open(self.__session_file, "r") as f:
-                    self__username, self.__api_key = json.load(f)
-                self.__id = "lastfm-{}".format(self.__username)
-                self.__name = "{}'s Last.fm account".format(self.__username)
-                self.__authenticated = True
-            except Exception as e:
-                print("Need to re-authenticate: {}".format(str(e)))
-
     def __save_cache(self):
         try:
             os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
@@ -54,9 +42,16 @@ class SourceModule(modules.SourceModule):
 
     def initialize(self):
         if not self.__id == "lastfm":
-            self.__username = re.sub(r"lastfm-", "", self.__id)
-            self.__id = "lastfm-{}".format(self.__username)
-            self.__name = "{}'s Last.fm account".format(self.__username)
+            self.__set_session_file()
+            if (os.path.isfile(self.__session_file)):
+                try:
+                    with open(self.__session_file, "r") as f:
+                        self__username, self.__api_key = json.load(f)
+                    self.__username = re.sub(r"lastfm-", "", self.__id)
+                    self.__name = "{}'s Last.fm account".format(self.__username)
+                    self.__authenticated = True
+                except Exception as e:
+                    print("Need to re-authenticate: {}".format(str(e)))
 
     def __http_debug(self):
         import http.client as http_client
