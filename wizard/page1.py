@@ -183,18 +183,35 @@ class Page1(WizardPage):
         self.status.emit("Finished comparing tracks.")
         self.setCompleted(True)
 
+    def __unlink_songs(self):
+        l = self.findChild(QListWidget, "leftTracklist").currentItem()
+        r = self.findChild(QListWidget, "rightTracklist").currentItem()
+
+        # Weird: for some reason, one of l.track and r.track is always None
+        if l is None:
+            l = self.findChild(QListWidget, "leftTracklist").item(r.track["peer"])
+        elif r is None:
+            r = self.findChild(QListWidget, "rightTracklist").item(l.track["peer"])
+
+        l.track["peer"] = r.track["peer"] = None
+        l.setForeground(QColor(127, 0, 0))
+        r.setForeground(QColor(127, 0, 0))
+
     def __track_select(self, item):
         thisList = item.listWidget()
         otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if thisList.objectName() == "leftTracklist" else "left"))
+        unlinkButton = self.findChild(QPushButton, "unlinkButton")
 
         # If this track doesn't have a peer in the other tracklist, just finish
-        if 'peer' not in item.track:
+        if 'peer' not in item.track or item.track["peer"] is None:
             otherList.setCurrentItem(None)
+            unlinkButton.setDisabled(True)
             return
 
         otherItem = otherList.item(item.track["peer"])
         otherItem.setSelected(True)
         otherList.scrollToItem(otherItem)
+        unlinkButton.setDisabled(False)
 
     def __create_source_layout(self, side):
         sourceLayout = QVBoxLayout()
@@ -246,6 +263,14 @@ class Page1(WizardPage):
         page1Layout.addLayout(sourcesLayout)
 
         sourcesLayout.addLayout(self.__create_source_layout("left"))
+
+        unlinkButton = QPushButton("Unlink")
+        unlinkButton.setObjectName("unlinkButton")
+        unlinkButton.setDisabled(True)
+        unlinkButton.setToolTip("Unlink songs")
+        unlinkButton.clicked.connect(self.__unlink_songs)
+        sourcesLayout.addWidget(unlinkButton)
+
         sourcesLayout.addLayout(self.__create_source_layout("right"))
 
         page2 = Page2()
