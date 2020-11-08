@@ -1,6 +1,7 @@
 from wizard import WizardPage
 from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtGui import QBrush, QColor
 import threading
 
 class Page2(WizardPage):
@@ -18,16 +19,29 @@ class Page2(WizardPage):
         page2Layout.addWidget(scrollArea)
         self.__new_song_row.connect(self.__add_song_row)
 
+    def __selected_item_changed(self, i):
+        print(i)
+        if i == 0:
+            self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:rgb(127,0,0); }")
+        else:
+            self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:inherit; }")
+
     def __add_song_row(self, side, label, search_results):
         self.__songs_table.addWidget(QLabel(label), self.__songs_table.rowCount(), side)
         combo = QComboBox()
         combo.setStyleSheet("border:0")
 
         if search_results:
+            combo.addItem("Don't sync", None)
+            combo.setItemData(0, QBrush(QColor(127, 0, 0)), Qt.TextColorRole)
             for r in search_results:
                 combo.addItem("{} - {}".format(r["artist"], r["title"]), r["id"])
+            combo.setCurrentIndex(1)
         else:
             combo.addItem("No songs found", None)
+            combo.setDisabled(True)
+
+        combo.currentIndexChanged.connect(self.__selected_item_changed)
 
         self.__songs_table.addWidget(combo, self.__songs_table.rowCount()-1, int(not side))
 
