@@ -1,5 +1,5 @@
 from wizard import WizardPage
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox
+from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtGui import QBrush, QColor
 import threading
@@ -11,12 +11,29 @@ class Page2(WizardPage):
     def __init__(self):
         super().__init__()
         page2Layout = QVBoxLayout(self)
+
+        table_header = QHBoxLayout()
+        lLabel = QLabel()
+        lLabel.setObjectName("lLabel")
+        table_header.addWidget(lLabel)
+        table_header.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        rLabel = QLabel()
+        rLabel.setObjectName("rLabel")
+        table_header.addWidget(rLabel)
+        page2Layout.addLayout(table_header)
+
+        hLine = QFrame(self.__songs_table)
+        hLine.setFrameShape(QFrame.HLine)
+        hLine.setFrameShadow(QFrame.Sunken)
+        page2Layout.addWidget(hLine)
+
         scrollArea = QScrollArea()
         scrollClient = QWidget()
         scrollClient.setObjectName("scrollClient")
         scrollArea.setWidgetResizable(True)
         scrollArea.setWidget(scrollClient)
         page2Layout.addWidget(scrollArea)
+
         self.__new_song_row.connect(self.__add_song_row)
 
     def __selected_item_changed(self, i):
@@ -26,9 +43,13 @@ class Page2(WizardPage):
         else:
             self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:inherit; }")
 
-    def __add_song_row(self, side, label, search_results):
-        self.__songs_table.addWidget(QLabel(label), self.__songs_table.rowCount(), side)
+    def __add_song_row(self, side, title, search_results):
+        label = QLabel(title)
+        label.setToolTip(title)
+        label.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred))
+        self.__songs_table.addWidget(label, self.__songs_table.rowCount(), side)
         combo = QComboBox()
+        combo.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
         combo.setStyleSheet("border:0")
 
         if search_results:
@@ -41,7 +62,8 @@ class Page2(WizardPage):
             combo.addItem("No songs found", None)
             combo.setDisabled(True)
 
-        combo.currentIndexChanged.connect(self.__selected_item_changed)
+        combo.setToolTip(combo.currentText())
+        combo.currentTextChanged.connect(combo.setToolTip)
 
         self.__songs_table.addWidget(combo, self.__songs_table.rowCount()-1, int(not side))
 
@@ -54,6 +76,11 @@ class Page2(WizardPage):
             "left": self.parent().parent().parent().page(0).getSource("left"),
             "right": self.parent().parent().parent().page(0).getSource("right")
         }
+
+        self.findChild(QLabel, "lLabel").setText("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
+        self.findChild(QLabel, "lLabel").setToolTip("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
+        self.findChild(QLabel, "rLabel").setText("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentText(), sources["right"].getName()))
+        self.findChild(QLabel, "rLabel").setToolTip("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentText(), sources["right"].getName()))
 
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():
@@ -87,6 +114,8 @@ class Page2(WizardPage):
             del self.__songs_table
 
         self.__songs_table = QGridLayout()
+        self.__songs_table.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding), 0, 0, 1, 2)
+
         scroll_client.setLayout(self.__songs_table)
 
         thread = threading.Thread(target=self.__search_songs, args=(self.__songs_table,))

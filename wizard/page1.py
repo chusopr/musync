@@ -51,6 +51,7 @@ class Page1(WizardPage):
             return # TODO do something else than silently fail
 
         self.findChild(QLabel, side + "SourceLabel").setText("Selected source: " + account.getName())
+        self.findChild(QLabel, side + "SourceLabel").setToolTip("Selected source: " + account.getName())
         self.__sources[side] = account
         playlistSelect = self.findChild(QComboBox, side + "Playlist")
         playlistSelect.clear()
@@ -58,6 +59,7 @@ class Page1(WizardPage):
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist["id"])
         playlistSelect.setDisabled(False)
+        playlistSelect.currentTextChanged.connect(playlistSelect.setToolTip)
         self.findChild(QLabel, side + "PlaylistLabel").setDisabled(False)
 
     def __account_select(self, side):
@@ -116,7 +118,9 @@ class Page1(WizardPage):
             trackList.takeItem(0)
         # Now add the tracks
         for t in tracks:
-            QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList).track = t
+            li = QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList)
+            li.track = t
+            li.setToolTip(li.text())
 
         # Check if the other playlist is also set to compare both
         if self.findChild(QComboBox, "{}Playlist".format("left" if side == "right" else "right")).currentData() is not None:

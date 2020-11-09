@@ -18,6 +18,7 @@ class MainWindow(QWizard):
         errorMsg.show()
 
     def __add_log(self, msg, escape=True):
+        self.__status.setToolTip(msg)
         if self.__log is not None:
             return self.__log.append(cgi.escape(msg) if escape else msg)
 
