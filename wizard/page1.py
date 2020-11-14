@@ -277,19 +277,14 @@ class Page1(WizardPage):
 
         sourcesLayout.addLayout(self.__create_source_layout("right"))
 
-        page2 = Page2()
-        self.__parent.addPage(self)
-        self.__parent.addPage(page2)
-
-    def __init__(self, parent):
+    def __init__(self):
         super().__init__()
-        self.__parent = parent
 
         self.__build_ui()
         self.__load_accounts()
 
-    def getSource(self, s):
-        return self.__sources[s]
+    def getSources(self):
+        return self.__sources
 
     def update(self):
         pass

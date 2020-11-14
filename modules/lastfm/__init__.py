@@ -5,6 +5,7 @@ from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
 import requests, modules, json, os, re
 from math import ceil
+from hashlib import md5
 
 class lastfm_createform_ready(object):
     def __call__(self, driver):
@@ -19,12 +20,22 @@ class lastfm_apitable_ready(object):
         except NoSuchElementException:
             return False
 
+class lastfm_authtoken_success:
+    def __call__(self, driver):
+        try:
+            return driver.find_element_by_class_name("alert-success")
+        except NoSuchElementException:
+            return False
+
+
 class SourceModule(modules.SourceModule):
     __id = "lastfm"
     __name = "Last.fm"
     __authenticated = False
     # Get your API key from https://www.last.fm/api/account/create
     __api_key = None
+    __api_secret = None
+    __session_key = None
 
     __webdriver = None
     __login_url = "https://last.fm/api/account/create"
@@ -36,7 +47,7 @@ class SourceModule(modules.SourceModule):
         try:
             os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
             with open(self.__session_file, "w") as f:
-                json.dump([self.__username, self.__api_key], f)
+                json.dump([self.__username, self.__api_key, self.__api_secret], f)
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
@@ -46,7 +57,7 @@ class SourceModule(modules.SourceModule):
             if (os.path.isfile(self.__session_file)):
                 try:
                     with open(self.__session_file, "r") as f:
-                        self__username, self.__api_key = json.load(f)
+                        self__username, self.__api_key, self.__api_secret = json.load(f)
                     self.__username = re.sub(r"lastfm-", "", self.__id)
                     self.__name = "{}'s Last.fm account".format(self.__username)
                     self.__authenticated = True
@@ -71,6 +82,63 @@ class SourceModule(modules.SourceModule):
 
     def isAuthenticated(self):
         return self.__authenticated
+
+    def __get_session_key(self):
+        if self.__session_key is not None:
+            return self.__session_key
+
+        token_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
+            self.__api_key,
+            md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8"))
+        ))
+
+        try:
+            token_request_json = json.loads(token_request.text)
+        except:
+            pass
+
+        if token_request.status_code != 200 or "token" not in token_request_json:
+            self.status.emit("Error authenticating to Last.fm")
+            return False
+
+        auth_token = token_request_json["token"]
+
+        if self.__webdriver == None:
+            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+        self.__webdriver.get("http://www.last.fm/api/auth/?api_key={}&token={}".format(self.__api_key, auth_token))
+
+        auth_token_success = False
+        while not auth_token_success:
+            try:
+                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
+                auth_token_success = wait.until(lastfm_authtoken_success())
+            except TimeoutException:
+                pass
+            except WebDriverException as e:
+                self.status.emit(e)
+                return False
+
+        self.__webdriver.quit()
+        self.__webdriver = None
+
+        session_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
+            self.__api_key,
+            auth_token,
+            md5("api_key{}methodauth.getsessiontoken{}{}".format(self.__api_key, auth_token, self.__api_secret).encode("utf-8")).hexdigest()
+        ))
+
+        try:
+            session_request_json = json.loads(session_request.text)
+        except:
+            pass
+
+        if session_request.status_code != 200 or "session" not in session_request_json or "key" not in session_request_json["session"]:
+            self.status.emit("Error authenticating to Last.fm")
+            return False
+
+        self.__session_key = session_request_json["session"]["key"]
+
+        return self.__session_key
 
     def authenticate(self, force=False):
         if self.__authenticated and not force:
@@ -213,7 +281,7 @@ class SourceModule(modules.SourceModule):
                 tracks.append({
                     "artist": d["artist"],
                     "title":  d["name"],
-                    "id":     d["url"]
+                    "id":     {"artist": d["artist"], "title": d["name"]}
                 })
 
             total_pages = ceil(float(search_results["results"]["opensearch:totalResults"])/int(search_results["results"]["opensearch:itemsPerPage"]))
@@ -235,15 +303,21 @@ class SourceModule(modules.SourceModule):
 
         return tracks
 
-    #def addTrack(self, track):
-        #search_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
-            #track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
-            #track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
-            #self.__api_key, current_page
-        #))
+    def addTrack(self, playlist, track):
+        if playlist == "loved":
+            if not self.__get_session_key():
+                return False
 
-        #if search_request.status_code != 200:
-            #self.status.emit("Error searching for tracks")
-            #break
+            love_request = requests.post("http://ws.audioscrobbler.com/2.0/", data={
+                "method": "track.love",
+                "track": track["title"],
+                "artist": track["artist"],
+                "api_key": self.__api_key,
+                "sk": self.__session_key,
+                "api_sig": md5("api_key{}artist{}methodtrack.lovesk{}track{}{}".format(self.__api_key, track["artist"], self.__session_key, track["title"], self.__api_secret).encode("utf-8")).hexdigest(),
+                "format": "json"
+            })
 
-        #search_results = json.loads(search_request.text)
+            return love_request.status_code == 200
+
+        return False

@@ -1,4 +1,6 @@
 from wizard.page1 import Page1
+from wizard.page2 import Page2
+from wizard.page3 import Page3
 from dialogs.log import LogDialog
 
 from PyQt5.QtWidgets import QWizard, QMessageBox, QStatusBar
@@ -29,7 +31,6 @@ class MainWindow(QWizard):
             self.currentPage().status.connect(lambda s: self.__status.showMessage(self.__add_log(s, True)))
 
     def buildUI(self):
-        Page1(self).log.connect(lambda msg: self.__add_log(msg, False))
 
         self.__status = QStatusBar(self)
         self.__status.messageChanged.connect(self.__add_log)
@@ -41,6 +42,16 @@ class MainWindow(QWizard):
         self.customButtonClicked.connect(self.__log.show)
 
         self.currentIdChanged.connect(self.__page_changed)
+
+        page1 = Page1()
+        page1.log.connect(lambda msg: self.__add_log(msg, False))
+        self.addPage(page1)
+        page2 = Page2()
+        page2.log.connect(lambda msg: self.__add_log(msg, False))
+        self.addPage(page2)
+        page3 = Page3()
+        page3.log.connect(lambda msg: self.__add_log(msg, False))
+        self.addPage(page3)
 
         # Show window
         self.setWindowTitle('muSync')

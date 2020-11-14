@@ -288,7 +288,10 @@ class SourceModule(modules.SourceModule):
             os.remove(self.__session_file)
 
     def searchTrack(self, track):
-        pass
+        return False
+
+    def addTrack(self, playlist, track):
+        return False
 
     def isReadOnly(self):
         return True

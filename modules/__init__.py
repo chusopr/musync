@@ -57,6 +57,10 @@ class SourceModule(QObject):
     def searchTrack(self, track):
         pass
 
+    @abstractmethod
+    def addTrack(self, playlist, track):
+        pass
+
     def deleteAccount(self):
         pass
 

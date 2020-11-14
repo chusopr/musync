@@ -67,15 +67,12 @@ class Page2(WizardPage):
 
         self.__songs_table.addWidget(combo, self.__songs_table.rowCount()-1, int(not side))
 
-    def __search_songs(self, songs_table):
+    def __search_songs(self):
         lList = self.parent().findChild(QListWidget, "leftTracklist")
         rList = self.parent().findChild(QListWidget, "rightTracklist")
         lPos = rPos = 0
 
-        sources = {
-            "left": self.parent().parent().parent().page(0).getSource("left"),
-            "right": self.parent().parent().parent().page(0).getSource("right")
-        }
+        sources = self.parent().parent().parent().page(0).getSources()
 
         self.findChild(QLabel, "lLabel").setText("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
         self.findChild(QLabel, "lLabel").setToolTip("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
@@ -114,9 +111,10 @@ class Page2(WizardPage):
             del self.__songs_table
 
         self.__songs_table = QGridLayout()
+        self.__songs_table.setObjectName("songs_table")
         self.__songs_table.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding), 0, 0, 1, 2)
 
         scroll_client.setLayout(self.__songs_table)
 
-        thread = threading.Thread(target=self.__search_songs, args=(self.__songs_table,))
+        thread = threading.Thread(target=self.__search_songs)
         thread.start()
