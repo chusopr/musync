@@ -81,7 +81,7 @@ class Page2(WizardPage):
 
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():
-            self.status.emit("Searching songs ({} % completed).".format(int((lPos+rPos)*100/(lList.count()+rList.count()))))
+            self.status.emit("Searching songs ({} % completed).".format(round((lPos+rPos)*100/(lList.count()+rList.count()))))
             if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
                 lPos = lPos + 1
                 if sources["right"].isReadOnly():
