@@ -193,10 +193,10 @@ class SourceModule(modules.SourceModule):
         self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
 
         try:
-            unserinfo_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
-            if unserinfo_request.status_code != 200:
+            userinfo_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+            if userinfo_request.status_code != 200:
                 return False # do something
-            userinfo = json.loads(unserinfo_request.text)
+            userinfo = json.loads(userinfo_request.text)
         except:
             pass
 
