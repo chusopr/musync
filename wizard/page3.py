@@ -1,12 +1,9 @@
 from wizard import WizardPage
-import modules
 
-from PyQt5.QtWidgets import QWizard, QWidget, QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
-from PyQt5.QtGui import QColor, QIcon
-from PyQt5.QtCore import Qt, QRect, pyqtSignal
-import cgi, icu, json, os, re, threading
-from appdirs import user_config_dir
-from sys import stderr
+from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
+from PyQt5.QtGui import QIcon
+from PyQt5.QtCore import QRect, pyqtSignal
+import threading
 
 class _QLabel(QLabel):
     resized = pyqtSignal()

@@ -1,5 +1,4 @@
 from wizard import WizardPage
-from wizard.page2 import Page2
 from dialogs.accounts import AccountsDialog
 import modules
 
