@@ -29,7 +29,7 @@ class LogDialog(QDialog):
         self.__autoScroll = QCheckBox("Auto-scroll")
         self.__autoScroll.setChecked(True)
         buttonsLayout.addWidget(self.__autoScroll)
-        clearButton = QPushButton(QIcon.fromTheme("delete"), "C&lear")
+        clearButton = QPushButton(QIcon.fromTheme("edit-delete"), "C&lear")
         clearButton.clicked.connect(self.__log.clear)
         buttonsLayout.addWidget(clearButton)
         copyButton = QPushButton(QIcon.fromTheme("edit-copy"), "Co&py")
