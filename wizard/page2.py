@@ -95,7 +95,7 @@ class Page2(WizardPage):
                 song = rList.item(rPos-1)
                 side = 1
 
-            if "peer" in song.track and song.track["peer"]:
+            if "peer" in song.track and song.track["peer"] is not None:
                 continue
 
             search_results = sources["left" if side else "right"].searchTrack(song.track)
