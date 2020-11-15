@@ -31,7 +31,6 @@ class MainWindow(QWizard):
             self.currentPage().status.connect(lambda s: self.__status.showMessage(self.__add_log(s, True)))
 
     def buildUI(self):
-
         self.__status = QStatusBar(self)
         self.__status.messageChanged.connect(self.__add_log)
 
@@ -57,3 +56,4 @@ class MainWindow(QWizard):
         # Show window
         self.setWindowTitle('muSync')
         self.show()
+        self.resize(self.sizeHint())
