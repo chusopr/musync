@@ -289,18 +289,6 @@ class SourceModule(modules.SourceModule):
             # Get only one page for now
             break
 
-            if (
-                    "{}tracks".format(playlist_name) not in playlist or
-                    "track" not in playlist["{}tracks".format(playlist_name)]
-            ):
-                break
-
-            for t in playlist["{}tracks".format(playlist_name)]["track"]:
-                tracks.append(self.__track_metadata(t))
-            total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
-            self.status.emit("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
-            current_page = current_page + 1
-
         return tracks
 
     def addTrack(self, playlist, track):
