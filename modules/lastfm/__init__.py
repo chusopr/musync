@@ -1,6 +1,3 @@
-from modules.lastfm.auth import AuthDialog
-
-from PyQt5.QtWidgets import QDialog
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
 import requests, modules, json, os, re
