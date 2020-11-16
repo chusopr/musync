@@ -4,7 +4,7 @@ from wizard.page3 import Page3
 from dialogs.log import LogDialog
 
 from PyQt5.QtWidgets import QWizard, QMessageBox, QStatusBar
-import modules, cgi
+import modules, html
 
 class MainWindow(QWizard):
     __log = None
@@ -22,7 +22,7 @@ class MainWindow(QWizard):
     def __add_log(self, msg, escape=True):
         self.__status.setToolTip(msg)
         if self.__log is not None:
-            return self.__log.append(cgi.escape(msg) if escape else msg)
+            return self.__log.append(html.escape(msg) if escape else msg)
 
     def __page_changed(self):
         if self.currentPage() is not None:

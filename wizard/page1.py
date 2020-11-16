@@ -4,7 +4,7 @@ import modules
 
 from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PyQt5.QtGui import QColor
-import cgi, icu, json, os, re, threading
+import html, icu, json, os, re, threading
 from appdirs import user_config_dir
 from sys import stderr
 
@@ -164,22 +164,22 @@ class Page1(WizardPage):
                     song.track["peer"] = j
                     otherSong.track["peer"] = pos
                     self.log.emit('Song <span style="color: #00be00">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> found as <span style="color: #00be00">{}</span> in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
-                        cgi.escape(song.text()),
-                        cgi.escape(self.findChild(QComboBox, "{}Playlist".format("right" if side else "left")).currentText()),
-                        cgi.escape(self.__sources["right" if side else "left"].getName()),
-                        cgi.escape(otherSong.text()),
-                        cgi.escape(self.findChild(QComboBox, "{}Playlist".format("left" if side else "left")).currentText()),
-                        cgi.escape(self.__sources["left" if side else "right"].getName())
+                        html.escape(song.text()),
+                        html.escape(self.findChild(QComboBox, "{}Playlist".format("right" if side else "left")).currentText()),
+                        html.escape(self.__sources["right" if side else "left"].getName()),
+                        html.escape(otherSong.text()),
+                        html.escape(self.findChild(QComboBox, "{}Playlist".format("left" if side else "left")).currentText()),
+                        html.escape(self.__sources["left" if side else "right"].getName())
                     ))
                     break
             if not found:
                 song.setForeground(QColor(127, 0, 0))
                 self.log.emit('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
-                    cgi.escape(song.text()),
-                    cgi.escape(self.findChild(QComboBox, "{}Playlist".format("right" if side else "left")).currentText()),
-                    cgi.escape(self.__sources["right" if side else "left"].getName()),
-                    cgi.escape(self.findChild(QComboBox, "{}Playlist".format("left" if side else "left")).currentText()),
-                    cgi.escape(self.__sources["left" if side else "right"].getName())
+                    html.escape(song.text()),
+                    html.escape(self.findChild(QComboBox, "{}Playlist".format("right" if side else "left")).currentText()),
+                    html.escape(self.__sources["right" if side else "left"].getName()),
+                    html.escape(self.findChild(QComboBox, "{}Playlist".format("left" if side else "left")).currentText()),
+                    html.escape(self.__sources["left" if side else "right"].getName())
                 ))
 
         # FIXME: Should only be run when both tracklists finished downloading
