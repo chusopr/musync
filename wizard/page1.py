@@ -2,7 +2,7 @@ from wizard import WizardPage
 from dialogs.accounts import AccountsDialog
 import modules
 
-from PyQt5.QtWidgets import QMessageBox, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
+from PyQt5.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PyQt5.QtGui import QColor
 import html, icu, json, os, re, threading
 from appdirs import user_config_dir
@@ -51,6 +51,7 @@ class Page1(WizardPage):
 
         self.findChild(QLabel, side + "SourceLabel").setText("Selected source: " + account.getName())
         self.findChild(QLabel, side + "SourceLabel").setToolTip("Selected source: " + account.getName())
+        self.parent().parent().parent().resize(self.parent().parent().parent().sizeHint())
         self.__sources[side] = account
         playlistSelect = self.findChild(QComboBox, side + "Playlist")
         playlistSelect.clear()
@@ -218,24 +219,27 @@ class Page1(WizardPage):
 
     def __create_source_layout(self, side):
         sourceLayout = QVBoxLayout()
-        selectedSourceLayout = QHBoxLayout()
+        selectedSourceFrame = QFrame()
+        selectedSourceFrame.setFrameShape(QFrame.Box)
+        selectedSourceFrame.setFrameShadow(QFrame.Raised)
+        selectedSourceLayout = QGridLayout(selectedSourceFrame)
         sourceLabel = QLabel("Selected source: None")
         sourceLabel.setObjectName(side + "SourceLabel")
-        selectedSourceLayout.addWidget(sourceLabel, 1)
+        selectedSourceLayout.addWidget(sourceLabel, 0, 0)
         changeSourceBtn = QPushButton("Change...")
         changeSourceBtn.setObjectName(side + "SourceBtn")
         changeSourceBtn.clicked.connect(lambda: self.__account_select(side))
-        selectedSourceLayout.addWidget(changeSourceBtn)
+        selectedSourceLayout.addWidget(changeSourceBtn, 0, 1)
         playlistLabel = QLabel("Selected playlist:")
         playlistLabel.setObjectName(side + "PlaylistLabel")
         playlistLabel.setDisabled(True)
-        selectedSourceLayout.addWidget(playlistLabel)
+        selectedSourceLayout.addWidget(playlistLabel, 1, 0)
         playlistSelect = QComboBox()
         playlistSelect.setDisabled(True)
         playlistSelect.setObjectName(side + "Playlist")
         playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(side))
-        selectedSourceLayout.addWidget(playlistSelect, 1)
-        sourceLayout.addLayout(selectedSourceLayout)
+        selectedSourceLayout.addWidget(playlistSelect, 1, 1)
+        sourceLayout.addWidget(selectedSourceFrame)
 
         trackList = QListWidget()
         trackList.setObjectName(side + "Tracklist")
