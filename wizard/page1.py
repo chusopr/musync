@@ -84,7 +84,7 @@ class Page1(WizardPage):
                 self.__threads[t].join()
 
         # Remove links in the other tracklist to the ones in this one being removed
-        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if side is "left" else "left"))
+        otherList = self.findChild(QListWidget, "{}Tracklist".format("right" if side == "left" else "left"))
         for i in range(otherList.count()):
             peer = otherList.item(i)
             if "peer" in peer.track:
