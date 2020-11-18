@@ -49,8 +49,8 @@ class Page1(WizardPage):
         if not playlists or len(playlists) == 0:
             return # TODO do something else than silently fail
 
-        self.findChild(QLabel, side + "SourceLabel").setText("Selected source: " + account.getName())
-        self.findChild(QLabel, side + "SourceLabel").setToolTip("Selected source: " + account.getName())
+        self.findChild(QLabel, side + "SourceLabel").setText("Selected account: " + account.getName())
+        self.findChild(QLabel, side + "SourceLabel").setToolTip("Selected account: " + account.getName())
         self.parent().parent().parent().resize(self.parent().parent().parent().sizeHint())
         self.__sources[side] = account
         playlistSelect = self.findChild(QComboBox, side + "Playlist")
@@ -223,7 +223,7 @@ class Page1(WizardPage):
         selectedSourceFrame.setFrameShape(QFrame.Box)
         selectedSourceFrame.setFrameShadow(QFrame.Raised)
         selectedSourceLayout = QGridLayout(selectedSourceFrame)
-        sourceLabel = QLabel("Selected source: None")
+        sourceLabel = QLabel("Selected account: None")
         sourceLabel.setObjectName(side + "SourceLabel")
         selectedSourceLayout.addWidget(sourceLabel, 0, 0)
         changeSourceBtn = QPushButton("Change...")

@@ -50,7 +50,7 @@ class AccountsDialog(QDialog):
         delButton.clicked.connect(lambda: self.__del_account(accountsList))
         delButton.setDisabled(True)
         buttonsLayout.addWidget(delButton)
-        okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Select source")
+        okButton = QPushButton(QIcon.fromTheme("dialog-ok"), "&Select account")
         okButton.clicked.connect(lambda: self.__select_account(accountsList))
         okButton.setDisabled(True)
         buttonsLayout.addWidget(okButton)
