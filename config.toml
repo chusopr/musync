@@ -1,0 +1,34 @@
+baseURL = "https://musync.link/"
+languageCode = "en-ie"
+title = "Synchronizing playlists across music services"
+theme = "ace-documentation"
+pygmentsCodeFences = true
+pygmentsStyle = "monokailight"
+
+[params]
+ordersectionsby = "weight"
+disableSearch = true
+highlightClientSide = false
+menushortcutsnewtab = false
+toc = true
+
+[markup.goldmark.renderer]
+unsafe = true
+
+[markup.tableOfContents]
+endLevel = 4
+
+[[menu.shortcuts]]
+name = "by Chuso.net"
+url = "https://chuso.net"
+weight = 1
+
+[[menu.shortcuts]]
+name = "<i class='fab fa-github'></i>"
+url = "https://github.com/chusopr/musync"
+weight = 2
+
+[[menu.shortcuts]]
+name = "<button class='btn btn-success mt-n1'>Download</button>"
+url = "https://github.com/chusopr/musync/releases"
+weight = 3
