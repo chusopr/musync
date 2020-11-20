@@ -243,7 +243,7 @@ class Page1(WizardPage):
 
         trackList = QListWidget()
         trackList.setObjectName(side + "Tracklist")
-        trackList.itemClicked.connect(self.__track_select)
+        trackList.currentItemChanged.connect(self.__track_select)
         sourceLayout.addWidget(trackList)
         return sourceLayout
 
