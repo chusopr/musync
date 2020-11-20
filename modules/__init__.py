@@ -10,6 +10,7 @@ ModuleMain = "__init__"
 
 class SourceModule(QObject):
     __id = None
+    __authenticated = False
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
     status = pyqtSignal(str)
 
@@ -38,6 +39,10 @@ class SourceModule(QObject):
     def getType(self):
         return self.__type
 
+    @abstractmethod
+    def authenticate(self, force=False):
+        pass
+
     def isReadOnly(self):
         return False
 
@@ -61,6 +66,7 @@ class SourceModule(QObject):
     def addTrack(self, playlist, track):
         pass
 
+    @abstractmethod
     def deleteAccount(self):
         pass
 

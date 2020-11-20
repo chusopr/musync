@@ -28,7 +28,6 @@ class lastfm_authtoken_success:
 class SourceModule(modules.SourceModule):
     __id = "lastfm"
     __name = "Last.fm"
-    __authenticated = False
     # Get your API key from https://www.last.fm/api/account/create
     __api_key = None
     __api_secret = None

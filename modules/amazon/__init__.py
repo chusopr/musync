@@ -13,7 +13,6 @@ class amzn_object_exists(object):
 class SourceModule(modules.SourceModule):
     __id = "amazon"
     __name = "Amazon Music"
-    __authenticated = False
     __cookies = {}
     __amzn = {}
     __webdriver = None
