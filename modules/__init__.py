@@ -66,9 +66,9 @@ class SourceModule(QObject):
     def addTrack(self, playlist, track):
         pass
 
-    @abstractmethod
     def deleteAccount(self):
-        pass
+        if (os.path.isfile(self.__session_file)):
+            os.remove(self.__session_file)
 
     def isAuthenticated(self):
         try:

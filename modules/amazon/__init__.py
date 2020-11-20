@@ -282,10 +282,6 @@ class SourceModule(modules.SourceModule):
 
         return tracks
 
-    def deleteAccount(self):
-        if (os.path.isfile(self.__session_file)):
-            os.remove(self.__session_file)
-
     def searchTrack(self, track):
         return False
 
