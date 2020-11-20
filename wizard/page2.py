@@ -37,7 +37,6 @@ class Page2(WizardPage):
         self.__new_song_row.connect(self.__add_song_row)
 
     def __selected_item_changed(self, i):
-        print(i)
         if i == 0:
             self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:rgb(127,0,0); }")
         else:
@@ -49,6 +48,7 @@ class Page2(WizardPage):
         label.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred))
         self.__songs_table.addWidget(label, self.__songs_table.rowCount(), side)
         combo = QComboBox()
+        combo.currentIndexChanged.connect(self.__selected_item_changed)
         combo.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
         combo.setStyleSheet("border:0")
 
