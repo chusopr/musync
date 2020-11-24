@@ -61,7 +61,7 @@ class Page3(WizardPage):
             if dst.currentData() is None:
                 self.__song_processed.emit(src, dstLabel, False, False)
             else:
-                self.__song_processed.emit(src, dstLabel, True, sources["right" if type(leftItem) is QLabel else "left"].addTrack(rPlaylist if type(leftItem) is QLabel else lPlaylist, dst.currentData()))
+                self.__song_processed.emit(src, dstLabel, True, sources["right" if type(leftItem) is QLabel else "left"].addTrack(rPlaylist["id"] if type(leftItem) is QLabel else lPlaylist, dst.currentData()))
 
             for w in [leftItem, rightItem]:
                 songs_table.removeWidget(w)

@@ -57,7 +57,7 @@ class Page1(WizardPage):
         playlistSelect.clear()
         playlistSelect.addItem("")
         for playlist in playlists:
-            playlistSelect.addItem(playlist["name"], playlist["id"])
+            playlistSelect.addItem(playlist["name"], playlist)
         playlistSelect.setDisabled(False)
         playlistSelect.currentTextChanged.connect(playlistSelect.setToolTip)
         self.findChild(QLabel, side + "PlaylistLabel").setDisabled(False)
@@ -98,7 +98,9 @@ class Page1(WizardPage):
     def __load_tracks(self, side):
         self.setCompleted(False)
 
-        current_playlist = self.findChild(QComboBox, side + "Playlist").currentData()
+        playlist_data = self.findChild(QComboBox, side + "Playlist").currentData()
+
+        current_playlist = playlist_data["id"] if playlist_data is not None and "id" in playlist_data else None
 
         # No playlist actually selected
         if current_playlist == None:
@@ -123,7 +125,7 @@ class Page1(WizardPage):
             li.setToolTip(li.text())
 
         # Check if the other playlist is also set to compare both
-        if self.findChild(QComboBox, "{}Playlist".format("left" if side == "right" else "right")).currentData() is not None:
+        if self.findChild(QListWidget, "{}Tracklist".format("left" if side == "right" else "right")).count() > 0:
             thread = threading.Thread(target=self.__compare_playlists)
             self.__threads["compare"] = thread
             thread.start()

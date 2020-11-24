@@ -74,10 +74,12 @@ class Page2(WizardPage):
 
         sources = self.parent().parent().parent().page(0).getSources()
 
-        self.findChild(QLabel, "lLabel").setText("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
-        self.findChild(QLabel, "lLabel").setToolTip("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentText(), sources["left"].getName()))
-        self.findChild(QLabel, "rLabel").setText("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentText(), sources["right"].getName()))
-        self.findChild(QLabel, "rLabel").setToolTip("{} in {}".format(self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentText(), sources["right"].getName()))
+        lCombo = self.parent().parent().parent().findChild(QComboBox, "leftPlaylist")
+        rCombo = self.parent().parent().parent().findChild(QComboBox, "rightPlaylist")
+        self.findChild(QLabel, "lLabel").setText("{} in {}".format(lCombo.currentText(), sources["left"].getName()))
+        self.findChild(QLabel, "lLabel").setToolTip("{} in {}".format(lCombo.currentText(), sources["left"].getName()))
+        self.findChild(QLabel, "rLabel").setText("{} in {}".format(rCombo.currentText(), sources["right"].getName()))
+        self.findChild(QLabel, "rLabel").setToolTip("{} in {}".format(rCombo.currentText(), sources["right"].getName()))
 
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():
