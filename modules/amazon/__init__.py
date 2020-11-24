@@ -13,6 +13,7 @@ class amzn_object_exists(object):
 class SourceModule(modules.SourceModule):
     __id = "amazon"
     __name = "Amazon Music"
+    __read_only = True
     __cookies = {}
     __amzn = {}
     __webdriver = None
@@ -287,6 +288,3 @@ class SourceModule(modules.SourceModule):
 
     def addTrack(self, playlist, track):
         return False
-
-    def isReadOnly(self):
-        return True

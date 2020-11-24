@@ -11,6 +11,7 @@ ModuleMain = "__init__"
 class SourceModule(QObject):
     __id = None
     __authenticated = False
+    __read_only = False
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
     status = pyqtSignal(str)
 
@@ -44,7 +45,7 @@ class SourceModule(QObject):
         pass
 
     def isReadOnly(self):
-        return False
+        return self.__read_only
 
     @abstractmethod
     def initialize(self):
