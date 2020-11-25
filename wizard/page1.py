@@ -259,6 +259,7 @@ class Page1(WizardPage):
                     self.__accounts[k].setId(k)
                     self.__accounts[k].initialize()
                     self.__accounts[k].status.connect(self.status.emit)
+                    self.__accounts[k].log.connect(self.log.emit)
             except Exception as e:
                 print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
 

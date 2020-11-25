@@ -14,6 +14,7 @@ class SourceModule(QObject):
     __read_only = False
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
     status = pyqtSignal(str)
+    log = pyqtSignal(str)
 
     def __init__(self):
         super().__init__()
