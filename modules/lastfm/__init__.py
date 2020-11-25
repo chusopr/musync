@@ -281,8 +281,7 @@ class SourceModule(modules.SourceModule):
             for d in search_results["results"]["trackmatches"]["track"]:
                 tracks.append({
                     "artist": d["artist"],
-                    "title":  d["name"],
-                    "id":     {"artist": d["artist"], "title": d["name"]}
+                    "title":  d["name"]
                 })
                 # Check if this seach result matches the same exact name as in the other source
                 # so we don't need to explicitly add the verbatim result to the returned search results.
@@ -298,8 +297,7 @@ class SourceModule(modules.SourceModule):
         if not verbatim_found:
             tracks.append({
                 "artist": track["artist"],
-                "title":  track["title"],
-                "id":     {"artist": track["artist"], "title": track["title"]}
+                "title":  track["title"]
             })
 
         return tracks
