@@ -302,6 +302,9 @@ class SourceModule(modules.SourceModule):
                 "format": "json"
             })
 
-            return love_request.status_code == 200
+            if love_request.status_code == 200:
+                return True
+
+            self.log.emit("Failed to add {} - {} to {} playlist in {}: {}".format(track["artist"], track["title"], playlist["name"], self.__name, love_request.text))
 
         return False
