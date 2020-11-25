@@ -259,6 +259,11 @@ class SourceModule(modules.SourceModule):
         tracks = []
         current_page = 1
         total_pages = 1
+        # Last.fm allows scrobbling or faving tracks that don't exist in their
+        # catalog, which will auto-create them, so we always give the choice to
+        # add the song with the same verbatim name it has in the other source,
+        # unless a verbatim result was already found in their catalog
+        verbatim_found = False
 
         while current_page <= total_pages:
             search_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
@@ -279,11 +284,23 @@ class SourceModule(modules.SourceModule):
                     "title":  d["name"],
                     "id":     {"artist": d["artist"], "title": d["name"]}
                 })
+                # Check if this seach result matches the same exact name as in the other source
+                # so we don't need to explicitly add the verbatim result to the returned search results.
+                # We make the comparison case insensitive because Last.fm is case insensitive.
+                if (track["artist"].lower() == d["artist"].lower() and track["title"].lower() == d["name"].lower()):
+                    verbatim_found = True
 
             total_pages = ceil(float(search_results["results"]["opensearch:totalResults"])/int(search_results["results"]["opensearch:itemsPerPage"]))
             current_page = current_page + 1
             # Get only one page for now
             break
+
+        if not verbatim_found:
+            tracks.append({
+                "artist": track["artist"],
+                "title":  track["title"],
+                "id":     {"artist": track["artist"], "title": track["title"]}
+            })
 
         return tracks
 
