@@ -1,3 +1,12 @@
 <div class="docs-toc">
 	{{ .TableOfContents }}
+
+        {{ if .Site.Params.aads.right }}
+            <div class="docs-toc">
+                {{ if .Site.Params.aads.notice }}
+                    <div><a style="font-size: x-small; color: #007bff" href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
+                {{ end }}
+                <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.right.width }}x{{ .Site.Params.aads.right.height }}" scrolling="no" style="width:{{ .Site.Params.aads.right.width }}px; height:{{ .Site.Params.aads.right.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+            </div>
+        {{ end }}
 </div>
