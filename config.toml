@@ -11,6 +11,20 @@ disableSearch = true
 highlightClientSide = false
 menushortcutsnewtab = false
 toc = true
+  [params.aads]
+    id = 1516558
+    [params.aads.notice]
+    msg = "Ethical ads help to keep this site running"
+    link = "privacy-policy"
+    [params.aads.left]
+    width = 120
+    height = 600
+    [params.aads.right]
+    width = 120
+    height = 600
+    [params.aads.top]
+    width = 320
+    height = 50
 
 [markup.goldmark.renderer]
 unsafe = true
