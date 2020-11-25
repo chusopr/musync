@@ -32,7 +32,6 @@ class MainWindow(QWizard):
 
     def buildUI(self):
         self.__status = QStatusBar(self)
-        self.__status.messageChanged.connect(self.__add_log)
 
         self.__log = LogDialog(self)
 
