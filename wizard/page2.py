@@ -56,7 +56,7 @@ class Page2(WizardPage):
             combo.addItem("Don't sync", None)
             combo.setItemData(0, QBrush(QColor(127, 0, 0)), Qt.TextColorRole)
             for r in search_results:
-                combo.addItem("{} - {}".format(r["artist"], r["title"]), r["id"])
+                combo.addItem("{} - {}".format(r["artist"], r["title"]), r)
             combo.setCurrentIndex(1)
         else:
             combo.addItem("No songs found", None)

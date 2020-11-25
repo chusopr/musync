@@ -305,7 +305,7 @@ class SourceModule(modules.SourceModule):
         return tracks
 
     def addTrack(self, playlist, track):
-        if playlist == "loved":
+        if playlist["id"] == "loved":
             if not self.__get_session_key():
                 return False
 
