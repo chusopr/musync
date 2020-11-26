@@ -11,6 +11,9 @@ disableSearch = true
 highlightClientSide = false
 menushortcutsnewtab = false
 toc = true
+  [params.donate]
+  paypal = "ZT649R3GUBARS"
+  bitcoin = "3Pnkw8BUeAwo4x2U4h7qbxLTCPDgjLLxwD"
   [params.aads]
     id = 1516558
     [params.aads.notice]
