@@ -1,12 +1,29 @@
 <div class="docs-toc">
 	{{ .TableOfContents }}
 
+        {{ if and (.Site.Params.donate) (or (eq .Site.Params.donate.side "right") (eq .Site.Params.donate.side "both")) }}
+            <div class="donate">
+                <div class="d-block">
+                    <hr />
+                    {{ if .Site.Params.donate.paypal }}
+                        <div><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business={{ .Site.Params.donate.paypal }}"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="Donate by card" /></a></div>
+                    {{ end }}
+                    {{ if .Site.Params.donate.bitcoin }}
+                        <div><i class="fab fa-btc"></i> <span style="font-size: x-small">{{ .Site.Params.donate.bitcoin }}</span></div>
+                    {{ end }}
+                </div>
+            </div>
+        {{ end }}
+
         {{ if .Site.Params.aads.right }}
-            <div class="docs-toc">
-                {{ if .Site.Params.aads.notice }}
-                    <div><a style="font-size: x-small; color: #007bff" href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
-                {{ end }}
-                <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.right.width }}x{{ .Site.Params.aads.right.height }}" scrolling="no" style="width:{{ .Site.Params.aads.right.width }}px; height:{{ .Site.Params.aads.right.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+            <div class="ads">
+                <div class="d-block">
+                    <hr />
+                    {{ if .Site.Params.aads.notice }}
+                        <div><a style="font-size: x-small; color: #007bff" href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
+                    {{ end }}
+                    <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.right.width }}x{{ .Site.Params.aads.right.height }}" scrolling="no" style="width:{{ .Site.Params.aads.right.width }}px; height:{{ .Site.Params.aads.right.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+                </div>
             </div>
         {{ end }}
 </div>

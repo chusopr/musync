@@ -10,26 +10,56 @@
 
                 <div class="docs-sidenav order-0 col-12 col-md-3 col-lg-2 col-xl-2 position-sticky border-right">
 
-                    {{ if .Site.Params.aads.top }}
+                    {{ if or (.Site.Params.aads.top) (.Site.Params.donate) }}
                         <div class="navbar-expand-md">
                             <div class="navbar-toggler" style="float: right">
-                                {{ if .Site.Params.aads.notice }}
-                                    <div><a style="font-size: x-small" href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
+                                {{ if .Site.Params.donate }}
+                                    <div>
+                                        {{ if .Site.Params.donate.paypal }}
+                                            <a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business={{ .Site.Params.donate.paypal }}"><img src="https://www.paypalobjects.com/en_GB/i/btn/btn_donate_SM.gif" alt="Donate with PayPal or card" width="74" height="21" /></a>
+                                        {{ end }}
+                                        {{ if .Site.Params.donate.bitcoin }}
+                                            <i class="fab fa-btc"></i> <span style="font-size: x-small">{{ .Site.Params.donate.bitcoin }}</span>
+                                        {{ end }}
+                                    </div>
                                 {{ end }}
-                                <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.top.width }}x{{ .Site.Params.aads.top.height }}" scrolling="no" style="width:{{ .Site.Params.aads.top.width }}px; height:{{ .Site.Params.aads.top.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+                                {{ if .Site.Params.aads.top }}
+                                    {{ if .Site.Params.aads.notice }}
+                                        <div><a style="font-size: x-small" href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
+                                    {{ end }}
+                                    <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.top.width }}x{{ .Site.Params.aads.top.height }}" scrolling="no" style="width:{{ .Site.Params.aads.top.width }}px; height:{{ .Site.Params.aads.top.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+                                {{ end }}
                             </div>
                         </div>
                     {{ end }}
 
                     {{- partial "menu.html" . -}}
 
-                    {{ if .Site.Params.aads.left }}
-                        <div class="navbar-expand-md">
-                            {{ if .Site.Params.aads.notice }}
-                                <div class="collapse navbar-collapse" style="font-size: x-small"><a href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
-                            {{ end }}
+                    {{ if and (.Site.Params.donate) (or (eq .Site.Params.donate.side "left") (eq .Site.Params.donate.side "both")) }}
+                        <div class="donate navbar-expand-md">
                             <div class="collapse navbar-collapse">
-                                <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.left.width }}x{{ .Site.Params.aads.left.height }}" scrolling="no" style="width:{{ .Site.Params.aads.left.width }}px; height:{{ .Site.Params.aads.left.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+                                <div class="d-block">
+                                    <hr />
+                                    {{ if .Site.Params.donate.paypal }}
+                                        <div><a href="https://www.paypal.com/cgi-bin/webscr?cmd=_donations&business={{ .Site.Params.donate.paypal }}"><img src="https://www.paypalobjects.com/en_US/GB/i/btn/btn_donateCC_LG.gif" alt="Donate by card" /></a></div>
+                                    {{ end }}
+                                    {{ if .Site.Params.donate.bitcoin }}
+                                        <div><i class="fab fa-btc"></i> <span style="font-size: x-small">{{ .Site.Params.donate.bitcoin }}</span></div>
+                                    {{ end }}
+                                </div>
+                            </div>
+                        </div>
+                    {{ end }}
+                    {{ if .Site.Params.aads.left }}
+                        <div class="ads navbar-expand-md">
+                            <div class="collapse navbar-collapse">
+                                <div class="d-block">
+                                    <hr />
+                                    {{ if .Site.Params.aads.notice }}
+                                        <div class="ads-notice"><a href="{{ relref . .Site.Params.aads.notice.link }}">{{ .Site.Params.aads.notice.msg }}</a></div>
+                                    {{ end }}
+                                    <iframe data-aa="{{ .Site.Params.aads.id }}" src="//ad.a-ads.com/{{ .Site.Params.aads.id }}?size={{ .Site.Params.aads.left.width }}x{{ .Site.Params.aads.left.height }}" scrolling="no" style="width:{{ .Site.Params.aads.left.width }}px; height:{{ .Site.Params.aads.left.height }}px; border:0px; padding:0; overflow:hidden" allowtransparency="true"></iframe>
+                                </div>
                             </div>
                         </div>
                     {{ end }}
