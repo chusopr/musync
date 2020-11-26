@@ -12,6 +12,7 @@ highlightClientSide = false
 menushortcutsnewtab = false
 toc = true
   [params.donate]
+  side = "left"
   paypal = "ZT649R3GUBARS"
   bitcoin = "3Pnkw8BUeAwo4x2U4h7qbxLTCPDgjLLxwD"
   [params.aads]
@@ -19,15 +20,12 @@ toc = true
     [params.aads.notice]
     msg = "Ethical ads help to keep this site running"
     link = "privacy-policy"
-    [params.aads.left]
-    width = 120
-    height = 600
-    [params.aads.right]
-    width = 120
-    height = 600
     [params.aads.top]
     width = 320
     height = 50
+    [params.aads.right]
+    width = 120
+    height = 600
 
 [markup.goldmark.renderer]
 unsafe = true
