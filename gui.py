@@ -3,7 +3,7 @@ from wizard.page2 import Page2
 from wizard.page3 import Page3
 from dialogs.log import LogDialog
 
-from PyQt5.QtWidgets import QWizard, QMessageBox, QStatusBar
+from PySide2.QtWidgets import QWizard, QMessageBox, QStatusBar
 import modules, html
 
 class MainWindow(QWizard):

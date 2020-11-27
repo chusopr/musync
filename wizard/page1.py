@@ -2,8 +2,8 @@ from wizard import WizardPage
 from dialogs.accounts import AccountsDialog
 import modules
 
-from PyQt5.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
-from PyQt5.QtGui import QColor
+from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
+from PySide2.QtGui import QColor
 import html, icu, json, os, re, threading
 from appdirs import user_config_dir
 from sys import stderr

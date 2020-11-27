@@ -1,23 +1,23 @@
 from wizard import WizardPage
 
-from PyQt5.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import QRect, pyqtSignal
+from PySide2.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
+from PySide2.QtGui import QIcon
+from PySide2.QtCore import QRect, Signal, Slot
 import threading
 
 class _QLabel(QLabel):
-    resized = pyqtSignal()
+    resized = Signal()
     def resizeEvent(self, _):
         self.resized.emit()
 
 class Page3(WizardPage):
-    __song_processed = pyqtSignal(str, str, bool, bool)
+    __song_processed = Signal(str, str, bool, bool)
     __results_table = None
     __icon_height = None
     
-    def __add_icon(self, found, result):
+    def __add_icon(self, sender, found, result):
         # Get position of the received signal
-        r, _, _, _ = self.__results_table.getItemPosition(self.__results_table.indexOf(self.sender()))
+        r, _, _, _ = self.__results_table.getItemPosition(self.__results_table.indexOf(sender))
         # We are always getting the size from the first label because getting it from the sender does weird things
         if self.__icon_height is None:
             self.__icon_height = self.__results_table.itemAtPosition(1, 1).widget().height()
@@ -37,8 +37,8 @@ class Page3(WizardPage):
     def __add_song_results(self, title, dest, found, result):
         titleLabel = _QLabel(title)
         # The icon needs to be added after the correct size of the label is set
-        titleLabel.resized.connect(lambda: self.__add_icon(found, result))
         self.__results_table.addWidget(titleLabel, self.__results_table.rowCount(), 1)
+        titleLabel.resized.connect(lambda: self.__add_icon(titleLabel, found, result))
         self.__results_table.addWidget(QLabel(dest), self.__results_table.rowCount()-1, 2)
 
     def __sync_songs(self):

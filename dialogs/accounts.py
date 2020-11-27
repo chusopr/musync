@@ -1,14 +1,14 @@
 from dialogs.sources import SourcesDialog
 from modules import SourceModule
 
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
+from PySide2.QtGui import QIcon
+from PySide2.QtCore import Signal
 
 class AccountsDialog(QDialog):
-    account_added = pyqtSignal(SourceModule)
-    account_deleted = pyqtSignal(str)
-    account_selected = pyqtSignal(SourceModule)
+    account_added = Signal(SourceModule)
+    account_deleted = Signal(str)
+    account_selected = Signal(SourceModule)
 
     def __del_account(self, accountsList):
         self.account_deleted.emit(accountsList.selectedItems()[0].source.getId())

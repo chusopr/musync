@@ -1,5 +1,5 @@
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
-from PyQt5.QtGui import QIcon
+from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
+from PySide2.QtGui import QIcon
 from datetime import datetime
 
 class LogDialog(QDialog):

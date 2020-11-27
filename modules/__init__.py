@@ -2,7 +2,7 @@ import os, importlib.util, re
 from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
-from PyQt5.QtCore import pyqtSignal, QObject
+from PySide2.QtCore import Signal, QObject
 from appdirs import user_cache_dir
 
 ModulesFolder = "modules"
@@ -13,8 +13,8 @@ class SourceModule(QObject):
     __authenticated = False
     __read_only = False
     __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
-    status = pyqtSignal(str)
-    log = pyqtSignal(str)
+    status = Signal(str)
+    log = Signal(str)
 
     def __init__(self):
         super().__init__()

@@ -1,11 +1,11 @@
 from wizard import WizardPage
-from PyQt5.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
-from PyQt5.QtCore import Qt, pyqtSignal
-from PyQt5.QtGui import QBrush, QColor
+from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
+from PySide2.QtCore import Qt, Signal
+from PySide2.QtGui import QBrush, QColor
 import threading
 
 class Page2(WizardPage):
-    __new_song_row =  pyqtSignal(int, str, list)
+    __new_song_row =  Signal(int, str, list)
     __songs_table = None
 
     def __init__(self):

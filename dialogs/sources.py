@@ -1,11 +1,11 @@
 import modules
 
-from PyQt5.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
-from PyQt5.QtGui import QIcon
-from PyQt5.QtCore import pyqtSignal
+from PySide2.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
+from PySide2.QtGui import QIcon
+from PySide2.QtCore import Signal
 
 class SourcesDialog(QDialog):
-    account_added = pyqtSignal(modules.SourceModule)
+    account_added = Signal(modules.SourceModule)
 
     def __add_account(self, sourcesList, accountsList):
         module_name = sourcesList.currentItem().text()
