@@ -1,6 +1,6 @@
 +++
 title = "Privacy Policy"
-weight = 3
+weight = 4
 +++
 {{< lead >}}muSync cares about the privacy of its users, both in its software and its website.{{</ lead >}}
 

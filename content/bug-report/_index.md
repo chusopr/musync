@@ -1,5 +1,6 @@
 +++
-title = "Rporting bugs"
+title = "Reporting bugs"
+weight = 3
 +++
 You can report bugs in [GitHub issue tracker](https://github.com/chusopr/musync/issues).
 
