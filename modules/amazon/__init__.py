@@ -22,7 +22,7 @@ class SourceModule(modules.SourceModule):
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     __domain = "music.amazon.com"
     # TODO: Support other browsers
-    __chromedriver_path = "/usr/bin/chromedriver"
+    __chromedriver_path = "chromedriver"
 
     def initialize(self):
         self.__set_session_file()

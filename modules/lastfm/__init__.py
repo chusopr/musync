@@ -35,7 +35,7 @@ class SourceModule(modules.SourceModule):
 
     __webdriver = None
     __login_url = "https://last.fm/api/account/create"
-    __chromedriver_path = "/usr/bin/chromedriver"
+    __chromedriver_path = "chromedriver"
 
     __username = None
 
