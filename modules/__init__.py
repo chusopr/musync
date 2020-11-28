@@ -5,7 +5,7 @@ from sys import stderr
 from PySide2.QtCore import Signal, QObject
 from appdirs import user_cache_dir
 
-ModulesFolder = "modules"
+ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
 
 class SourceModule(QObject):
@@ -18,9 +18,9 @@ class SourceModule(QObject):
 
     def __init__(self):
         super().__init__()
-        self.__id = re.sub(r"%s." % ModulesFolder, "", self.__module__)
+        self.__id = re.sub(r"modules.", "", self.__module__)
         #@final
-        self.__type = re.sub(r"%s." % ModulesFolder, "", self.__module__)
+        self.__type = re.sub(r"modules.", "", self.__module__)
         try:
             self.__name
         except AttributeError:
@@ -81,7 +81,7 @@ class SourceModule(QObject):
 modules = {}
 
 def create_object(mod):
-        spec = importlib.util.find_spec(ModulesFolder + "." + mod)
+        spec = importlib.util.find_spec("modules.{}".format(mod))
         module = ModuleType(spec.name)
         module.__spec__ = spec
         spec.loader.exec_module(module)
@@ -96,7 +96,7 @@ def load():
             if m not in ["__init__.py", "__init__.pyc", "__pycache__"]:
                 print("{} is not a valid module".format(m), file=stderr)
             continue
-        spec = importlib.util.find_spec(ModulesFolder + "." + m)
+        spec = importlib.util.find_spec("modules.{}".format(m))
         module = ModuleType(spec.name)
         module.__spec__ = spec
         spec.loader.exec_module(module)
