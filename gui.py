@@ -35,6 +35,7 @@ class MainWindow(QWizard):
 
         self.__log = LogDialog(self)
 
+        self.setWizardStyle(QWizard.ClassicStyle)
         self.setButtonLayout([QWizard.Stretch, QWizard.CustomButton1, QWizard.NextButton, QWizard.CancelButton])
         self.setButtonText(QWizard.CustomButton1, "&Logs")
         self.setOption(QWizard.HaveCustomButton1, True)
