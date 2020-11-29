@@ -10,7 +10,9 @@ from selenium.common.exceptions import WebDriverException
 app = QApplication(sys.argv)
 
 try:
-    chrometest = webdriver.Chrome(executable_path="chromedriver")
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument("headless")
+    chrometest = webdriver.Chrome(executable_path="chromedriver", options=chrome_options)
     chrometest.quit()
     mainWindow = gui.MainWindow()
 
