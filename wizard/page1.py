@@ -4,9 +4,14 @@ import modules
 
 from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide2.QtGui import QColor
-import html, icu, json, os, re, threading
+import html, json, os, re, threading
 from appdirs import user_config_dir
-from sys import stderr
+from sys import stderr, modules as imported_modules
+
+try:
+    import icu
+except ModuleNotFoundError:
+    pass
 
 class Page1(WizardPage):
     __threads = {
@@ -160,7 +165,7 @@ class Page1(WizardPage):
             for j in range(pos, otherList.count()):
                 otherSong = otherList.item(j)
                 # TODO make regexp configurable
-                if re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(song.text()), flags=re.IGNORECASE).lower() == re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(otherSong.text()), flags=re.IGNORECASE).lower():
+                if re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(song.text()) if "icu" in imported_modules else song.text(), flags=re.IGNORECASE).lower() == re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate(otherSong.text()) if "icu" in imported_modules else otherSong.text(), flags=re.IGNORECASE).lower():
                     found = True
                     song.setForeground(QColor(0, 127, 0))
                     otherSong.setForeground(QColor(0, 127, 0))
@@ -284,6 +289,9 @@ class Page1(WizardPage):
         sourcesLayout.addLayout(self.__create_source_layout("right"))
 
     def __init__(self):
+        if "icu" not in imported_modules:
+            print("PyICU was not found. It's recommended to isntall PyICU.")
+
         super().__init__()
 
         self.__build_ui()
