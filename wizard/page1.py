@@ -4,8 +4,8 @@ import modules
 
 from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide2.QtGui import QColor
+from PySide2.QtCore import QSettings
 import html, json, os, re, threading
-from appdirs import user_config_dir
 from sys import stderr, modules as imported_modules
 
 try:
@@ -19,32 +19,19 @@ class Page1(WizardPage):
         "right": None,
         "compare": None
     }
-    __accounts_file = os.path.join(user_config_dir("musync"), "accounts.json")
-    __accounts = {}
     __sources = {
         "left":  None,
         "right": None
     }
 
-    def __save_settings(self):
-        s = {}
-        for k,v in self.__accounts.items():
-            s[k] = v.getType()
-        os.makedirs(os.path.dirname(self.__accounts_file), 0o700, True)
-        with open(self.__accounts_file, "w") as f:
-            json.dump(s, f)
-
     def __account_added(self, account):
-        self.__accounts[account.getId()] = account
-        self.__save_settings()
         account.status.connect(self.status.emit)
-
-    def __account_deleted(self, account_id):
-        del self.__accounts[account_id]
-        self.__save_settings()
 
     def __account_selected(self, side, account):
         self.setCompleted(False)
+
+        account.status.connect(self.status.emit)
+        account.log.connect(self.log.emit)
 
         if not account.isAuthenticated() and not account.authenticate():
             # TODO show error
@@ -74,9 +61,8 @@ class Page1(WizardPage):
             errorMsg.show()
             return
 
-        accountsDialog = AccountsDialog(self.__accounts)
+        accountsDialog = AccountsDialog()
         accountsDialog.account_added.connect(self.__account_added)
-        accountsDialog.account_deleted.connect(self.__account_deleted)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
         del accountsDialog
 
@@ -254,20 +240,6 @@ class Page1(WizardPage):
         sourceLayout.addWidget(trackList)
         return sourceLayout
 
-    def __load_accounts(self):
-        if (os.path.isfile(self.__accounts_file)):
-            try:
-                with open(self.__accounts_file, "r") as f:
-                    accounts = json.load(f)
-                for k,v in accounts.items():
-                    self.__accounts[k] = modules.create_object(v)
-                    self.__accounts[k].setId(k)
-                    self.__accounts[k].initialize()
-                    self.__accounts[k].status.connect(self.status.emit)
-                    self.__accounts[k].log.connect(self.log.emit)
-            except Exception as e:
-                print("Cannot parse accounts configuration: {}".format(str(e)), file=stderr)
-
     def getSource(self, s):
         return self._sources[s]
 
@@ -295,7 +267,6 @@ class Page1(WizardPage):
         super().__init__()
 
         self.__build_ui()
-        self.__load_accounts()
 
     def getSources(self):
         return self.__sources
