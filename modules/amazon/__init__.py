@@ -1,8 +1,9 @@
 from PySide2.QtWidgets import QMessageBox
+from PySide2.QtCore import QSettings
 from selenium import webdriver
 from selenium.common.exceptions import WebDriverException, TimeoutException
 from urllib.parse import urlparse
-import requests, modules, json
+import requests, modules, json, keyring
 import os, re
 
 class amzn_object_exists(object):
@@ -25,24 +26,21 @@ class SourceModule(modules.SourceModule):
     __chromedriver_path = "chromedriver"
 
     def initialize(self):
-        self.__set_session_file()
-        self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
-        if (os.path.isfile(self.__session_file)):
+        if (self.__id != "amazon"):
             try:
-                with open(self.__session_file, "r") as f:
-                    self.__domain, self.__cookies, self.__amzn = json.load(f)
+                self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
+                self.__domain = QSettings().value("{}/domain".format(self.__id))
+                self.__cookies, self.__amzn = json.loads(keyring.get_password("muSync", self.__id))
                 requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
                 self.__authenticated = True
-
             except Exception as e:
                 print("Need to re-authenticate: {}".format(str(e)))
 
     def __save_cache(self):
         try:
+            QSettings().setValue("{}/domain".format(self.__id), self.__domain)
             self.__cookies = requests.utils.dict_from_cookiejar(self.__session.cookies)
-            os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
-            with open(self.__session_file, "w") as f:
-                json.dump([self.__domain, self.__cookies, self.__amzn], f)
+            keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
@@ -157,7 +155,6 @@ class SourceModule(modules.SourceModule):
         self.__id = "amazon-{}".format(self.__amzn["customerId"])
         # Not great, but Amazon Music doesn't really provide a friendly user name
         self.__name = "Amazon Music account {}".format(self.__amzn["customerId"])
-        self.__set_session_file()
 
         self.__save_cache()
 
