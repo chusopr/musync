@@ -19,9 +19,6 @@ try:
     chrome_options.add_argument("headless")
     chrometest = webdriver.Chrome(executable_path="chromedriver", options=chrome_options)
     chrometest.quit()
-    mainWindow = gui.MainWindow()
-
-    sys.exit(app.exec_())
 except WebDriverException as e:
     if "executable needs to be in PATH" in e.msg:
         d = QMessageBox(QMessageBox.Critical, "Chromedriver not found",
@@ -43,3 +40,8 @@ Current PATH:
                     "Please restart this application after downloading Chromedriver",
                     QMessageBox.Ok)
         d.exec()
+        sys.exit(1)
+
+mainWindow = gui.MainWindow()
+
+sys.exit(app.exec_())
