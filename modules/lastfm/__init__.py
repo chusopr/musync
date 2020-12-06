@@ -187,6 +187,7 @@ class SourceModule(modules.SourceModule):
 
         self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("auth-dropdown-menu-item")[0].children[0].textContent;')
         self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
+        self.__api_secret = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent;')
 
         try:
             userinfo_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
