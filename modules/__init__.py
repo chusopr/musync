@@ -1,11 +1,28 @@
-import os, importlib.util, re, keyring
+import os, importlib.util, re, keyring, requests
 from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
-from PySide2.QtCore import Signal, QObject
+from PySide2.QtWidgets import QMessageBox as MessageBox
+from PySide2.QtCore import Signal, QObject, QSettings
+from selenium import webdriver as selenium_webdriver
+from selenium.common import exceptions as WebExceptions
 
 ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
+
+class WebDriver(selenium_webdriver.Chrome):
+    def wait(self, wait_class):
+        while True:
+            try:
+                wait = selenium_webdriver.support.ui.WebDriverWait(self, 3)
+                result = wait.until(wait_class())
+                if result:
+                    return result
+            except WebExceptions.TimeoutException:
+                pass
+            except WebExceptions.WebDriverException as e:
+                self.status.emit(e)
+                return False
 
 class SourceModule(QObject):
     __id = None
@@ -72,6 +89,12 @@ class SourceModule(QObject):
             return self.__authenticated
         except AttributeError:
             return True
+
+    def settings(self):
+        return QSettings()
+
+    def requests(self):
+        return requests
 
 modules = {}
 

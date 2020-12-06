@@ -1,6 +1,4 @@
-from selenium import webdriver
-from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
-import requests, modules, json, os, re, keyring
+import modules, json, os, re
 from math import ceil
 from hashlib import md5
 
@@ -14,14 +12,14 @@ class lastfm_apitable_ready(object):
     def __call__(self, driver):
         try:
             return driver.find_element_by_class_name("auth-dropdown-menu-item") and driver.find_element_by_class_name("api-details-table")
-        except NoSuchElementException:
+        except modules.WebExceptions.NoSuchElementException:
             return False
 
 class lastfm_authtoken_success:
     def __call__(self, driver):
         try:
             return driver.find_element_by_class_name("alert-success")
-        except NoSuchElementException:
+        except modules.WebExceptions.NoSuchElementException:
             return False
 
 
@@ -35,13 +33,12 @@ class SourceModule(modules.SourceModule):
 
     __webdriver = None
     __login_url = "https://last.fm/api/account/create"
-    __chromedriver_path = "chromedriver"
 
     __username = None
 
     def __save_cache(self):
         try:
-            keyring.set_password("muSync", self.__id, json.dumps([self.__api_key, self.__api_secret]))
+            modules.keyring.set_password("muSync", self.__id, json.dumps([self.__api_key, self.__api_secret]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
@@ -50,20 +47,10 @@ class SourceModule(modules.SourceModule):
             try:
                 self.__username = re.sub(r"lastfm-", "", self.__id)
                 self.__name = "{}'s Last.fm account".format(self.__username)
-                self.__api_key, self.__api_secret = json.loads(keyring.get_password("muSync", self.__id))
+                self.__api_key, self.__api_secret = json.loads(modules.keyring.get_password("muSync", self.__id))
                 self.__authenticated = True
             except Exception as e:
                 print("Need to re-authenticate: {}".format(str(e)))
-
-    def __http_debug(self):
-        import http.client as http_client
-        import logging
-        http_client.HTTPConnection.debuglevel = 1
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-        requests_log = logging.getLogger("requests.packages.urllib3")
-        requests_log.setLevel(logging.DEBUG)
-        requests_log.propagate = True
 
     def __track_metadata(self, d):
         track = {}
@@ -78,7 +65,7 @@ class SourceModule(modules.SourceModule):
         if self.__session_key is not None:
             return self.__session_key
 
-        token_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
+        token_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
             self.__api_key,
             md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8"))
         ))
@@ -95,24 +82,15 @@ class SourceModule(modules.SourceModule):
         auth_token = token_request_json["token"]
 
         if self.__webdriver == None:
-            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+            self.__webdriver = modules.WebDriver()
         self.__webdriver.get("http://www.last.fm/api/auth/?api_key={}&token={}".format(self.__api_key, auth_token))
 
-        auth_token_success = False
-        while not auth_token_success:
-            try:
-                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
-                auth_token_success = wait.until(lastfm_authtoken_success())
-            except TimeoutException:
-                pass
-            except WebDriverException as e:
-                self.status.emit(e)
-                return False
+        self.__webdriver.wait(lastfm_authtoken_success)
 
         self.__webdriver.quit()
         self.__webdriver = None
 
-        session_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
+        session_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
             auth_token,
             md5("api_key{}methodauth.getsessiontoken{}{}".format(self.__api_key, auth_token, self.__api_secret).encode("utf-8")).hexdigest()
@@ -136,19 +114,10 @@ class SourceModule(modules.SourceModule):
             return True
 
         if self.__webdriver == None:
-            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+            self.__webdriver = modules.WebDriver()
         self.__webdriver.get(self.__login_url)
 
-        create_form = False
-        while not create_form:
-            try:
-                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
-                create_form = wait.until(lastfm_createform_ready())
-            except TimeoutException:
-                pass
-            except WebDriverException as e:
-                self.status.emit(e)
-                break
+        create_form = self.__webdriver.wait(lastfm_createform_ready)
 
         if not create_form:
             self.__webdriver.quit()
@@ -169,23 +138,14 @@ class SourceModule(modules.SourceModule):
 
         create_form.submit()
 
-        api_details = False
-        while not api_details:
-            try:
-                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
-                api_details = wait.until(lastfm_apitable_ready())
-            except TimeoutException:
-                pass
-            except WebDriverException as e:
-                self.status.emit(e)
-                break
+        self.__webdriver.wait(lastfm_apitable_ready)
 
         self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("auth-dropdown-menu-item")[0].children[0].textContent;')
         self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
         self.__api_secret = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent;')
 
         try:
-            userinfo_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+            userinfo_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
             if userinfo_request.status_code != 200:
                 return False # do something
             userinfo = json.loads(userinfo_request.text)
@@ -227,7 +187,7 @@ class SourceModule(modules.SourceModule):
         current_page = 1
         total_pages = 1
         while current_page <= total_pages:
-            tracks_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
+            tracks_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
 
             if tracks_request.status_code != 200:
                 break
@@ -260,7 +220,7 @@ class SourceModule(modules.SourceModule):
         verbatim_found = False
 
         while current_page <= total_pages:
-            search_request = requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
+            search_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
                 track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
                 track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
                 self.__api_key, current_page
@@ -301,7 +261,7 @@ class SourceModule(modules.SourceModule):
             if not self.__get_session_key():
                 return False
 
-            love_request = requests.post("http://ws.audioscrobbler.com/2.0/", data={
+            love_request = self.requests().post("http://ws.audioscrobbler.com/2.0/", data={
                 "method": "track.love",
                 "track": track["title"],
                 "artist": track["artist"],
