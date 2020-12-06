@@ -1,9 +1,5 @@
-from PySide2.QtWidgets import QMessageBox
-from PySide2.QtCore import QSettings
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException, TimeoutException
 from urllib.parse import urlparse
-import requests, modules, json, keyring
+import modules, json
 import os, re
 
 class amzn_object_exists(object):
@@ -18,44 +14,36 @@ class SourceModule(modules.SourceModule):
     __cookies = {}
     __amzn = {}
     __webdriver = None
-    __session = requests.Session()
+    __session = None
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     __domain = "music.amazon.com"
-    # TODO: Support other browsers
-    __chromedriver_path = "chromedriver"
 
     def initialize(self):
+        self.__session = self.requests().Session()
+        errorMsg = modules.MessageBox(modules.MessageBox.Critical, "%s module failed" % self.__name, "%s\nTheir site may have changed and this module may be outdated. Please check for updates." % self.__name, modules.MessageBox.Ok, None)
+        errorMsg.setModal(True)
+        errorMsg.show()
         if (self.__id != "amazon"):
             try:
                 self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
-                self.__domain = QSettings().value("{}/domain".format(self.__id))
-                self.__cookies, self.__amzn = json.loads(keyring.get_password("muSync", self.__id))
-                requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
+                self.__domain = self.settings().value("{}/domain".format(self.__id))
+                self.__cookies, self.__amzn = json.loads(modules.keyring.get_password("muSync", self.__id))
+                self.requests().utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
                 self.__authenticated = True
             except Exception as e:
                 print("Need to re-authenticate: {}".format(str(e)))
 
     def __save_cache(self):
         try:
-            QSettings().setValue("{}/domain".format(self.__id), self.__domain)
-            self.__cookies = requests.utils.dict_from_cookiejar(self.__session.cookies)
-            keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
+            self.settings().setValue("{}/domain".format(self.__id), self.__domain)
+            self.__cookies = self.requests().utils.dict_from_cookiejar(self.__session.cookies)
+            modules.keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
-    def __http_debug(self):
-        import http.client as http_client
-        import logging
-        http_client.HTTPConnection.debuglevel = 1
-        logging.basicConfig()
-        logging.getLogger().setLevel(logging.DEBUG)
-        requests_log = logging.getLogger("requests.packages.urllib3")
-        requests_log.setLevel(logging.DEBUG)
-        requests_log.propagate = True
-
     def __possibly_outdated(self, message, window):
-        errorMsg = QMessageBox(QMessageBox.Critical, "%s module failed" % self.__name, "%s\nTheir site may have changed and this module may be outdated. Please check for updates." % message, QMessageBox.Ok, window)
+        errorMsg = modules.MessageBox(modules.MessageBox.Critical, "%s module failed" % self.__name, "%s\nTheir site may have changed and this module may be outdated. Please check for updates." % message, modules.MessageBox.Ok, window)
         errorMsg.setModal(True)
         errorMsg.show()
 
@@ -113,21 +101,10 @@ class SourceModule(modules.SourceModule):
             return True
 
         if self.__webdriver == None:
-            self.__webdriver = webdriver.Chrome(executable_path=self.__chromedriver_path)
+            self.__webdriver = modules.WebDriver()
         self.__webdriver.get(self.__login_url)
 
-        element = False
-        while not element:
-            try:
-                wait = webdriver.support.ui.WebDriverWait(self.__webdriver, 3)
-                element = wait.until(amzn_object_exists())
-            except TimeoutException:
-                pass
-            except WebDriverException as e:
-                self.status.emit(e)
-                break
-
-        if not element:
+        if not self.__webdriver.wait(amzn_object_exists):
             self.__webdriver.quit()
             self.__webdriver = None
             self.__authenticated = False
@@ -147,7 +124,7 @@ class SourceModule(modules.SourceModule):
         self.__cookies = {}
         for cookie in self.__webdriver.get_cookies():
             self.__cookies[cookie["name"]] = cookie["value"]
-        requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
+        self.requests().utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
 
         music_url = urlparse(self.__webdriver.current_url)
         self.__domain = music_url.hostname
