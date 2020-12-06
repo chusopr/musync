@@ -1,6 +1,6 @@
 from selenium import webdriver
 from selenium.common.exceptions import NoSuchElementException, WebDriverException, TimeoutException
-import requests, modules, json, os, re
+import requests, modules, json, os, re, keyring
 from math import ceil
 from hashlib import md5
 
@@ -41,24 +41,19 @@ class SourceModule(modules.SourceModule):
 
     def __save_cache(self):
         try:
-            os.makedirs(os.path.dirname(self.__session_file), 0o700, True)
-            with open(self.__session_file, "w") as f:
-                json.dump([self.__username, self.__api_key, self.__api_secret], f)
+            keyring.set_password("muSync", self.__id, json.dumps([self.__api_key, self.__api_secret]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
     def initialize(self):
         if not self.__id == "lastfm":
-            self.__set_session_file()
-            if (os.path.isfile(self.__session_file)):
-                try:
-                    with open(self.__session_file, "r") as f:
-                        self__username, self.__api_key, self.__api_secret = json.load(f)
-                    self.__username = re.sub(r"lastfm-", "", self.__id)
-                    self.__name = "{}'s Last.fm account".format(self.__username)
-                    self.__authenticated = True
-                except Exception as e:
-                    print("Need to re-authenticate: {}".format(str(e)))
+            try:
+                self.__username = re.sub(r"lastfm-", "", self.__id)
+                self.__name = "{}'s Last.fm account".format(self.__username)
+                self.__api_key, self.__api_secret = json.loads(keyring.get_password("muSync", self.__id))
+                self.__authenticated = True
+            except Exception as e:
+                print("Need to re-authenticate: {}".format(str(e)))
 
     def __http_debug(self):
         import http.client as http_client
@@ -202,8 +197,6 @@ class SourceModule(modules.SourceModule):
 
         self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
         self.__id = "lastfm-{}".format(self.__username)
-
-        self.__set_session_file()
 
         self.__save_cache()
 
