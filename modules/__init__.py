@@ -1,9 +1,8 @@
-import os, importlib.util, re
+import os, importlib.util, re, keyring
 from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
 from PySide2.QtCore import Signal, QObject
-from appdirs import user_cache_dir
 
 ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
@@ -12,7 +11,6 @@ class SourceModule(QObject):
     __id = None
     __authenticated = False
     __read_only = False
-    __session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(__id))
     status = Signal(str)
     log = Signal(str)
 
@@ -25,9 +23,6 @@ class SourceModule(QObject):
             self.__name
         except AttributeError:
             self.__name = self.__id
-
-    def __set_session_file(self):
-        self.__session_file = os.path.join(user_cache_dir("musync"), "{}.session".format(self.__id))
 
     def getId(self):
         return self.__id
@@ -69,8 +64,8 @@ class SourceModule(QObject):
         pass
 
     def deleteAccount(self):
-        if (os.path.isfile(self.__session_file)):
-            os.remove(self.__session_file)
+        if keyring.get_password("muSync", self.__id):
+            keyring.delete_password("muSync", self.__id)
 
     def isAuthenticated(self):
         try:
