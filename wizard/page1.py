@@ -71,7 +71,7 @@ class Page1(WizardPage):
 
         for t in [side, "compare"]:
             # Stop any thread running on this source
-            if self.__threads[t] is not None and self.__threads[t].isAlive():
+            if self.__threads[t] is not None and self.__threads[t].is_alive():
                 # TODO: for now we just wait for the thread to finish instead of stopping it
                 self.__threads[t].join()
 
