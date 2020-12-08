@@ -25,7 +25,19 @@ class SourceModule(modules.SourceModule):
             try:
                 self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
                 self.__domain = self.settings().value("{}/domain".format(self.__id))
-                self.__cookies, self.__amzn = json.loads(modules.keyring.get_password("muSync", self.__id))
+                if modules.keyring.get_keyring().name == "Windows WinVaultKeyring":
+                    # Windows only supports saving credentials up to 512 bytes length
+                    i = 0
+                    cred = ""
+                    cred_chunk = modules.keyring.get_password("muSync", "_".join([self.__id, str(i)]))
+                    while cred_chunk:
+                        cred = "".join([cred, cred_chunk])
+                        i = i + 1
+                        cred_chunk = modules.keyring.get_password("muSync", "_".join([self.__id, str(i)]))
+                    if cred:
+                        self.__cookies, self.__amzn = json.loads(cred)
+                else:
+                    self.__cookies, self.__amzn = json.loads(modules.keyring.get_password("muSync", self.__id))
                 self.requests().utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
                 self.__authenticated = True
             except Exception as e:
@@ -35,7 +47,17 @@ class SourceModule(modules.SourceModule):
         try:
             self.settings().setValue("{}/domain".format(self.__id), self.__domain)
             self.__cookies = self.requests().utils.dict_from_cookiejar(self.__session.cookies)
-            modules.keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
+            if modules.keyring.get_keyring().name == "Windows WinVaultKeyring":
+                # Windows only supports saving credentials up to 512 bytes length
+                cred = json.dumps([self.__cookies, self.__amzn])
+                cred_chunk = cred[0:512]
+                i = 0
+                while cred_chunk:
+                    modules.keyring.set_password("muSync", "_".join([self.__id, str(i)]), cred_chunk)
+                    i = i + 1
+                    cred_chunk = cred[i*512:(i+1)*512]
+            else:
+                modules.keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
