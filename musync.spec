@@ -64,3 +64,6 @@ coll = COLLECT(exe,
                upx=True,
                upx_exclude=[],
                name='musync')
+app = BUNDLE(coll,
+             name='muSync.app',
+             bundle_identifier='link.musync')
