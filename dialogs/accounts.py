@@ -3,13 +3,14 @@ import modules
 
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
 from PySide2.QtGui import QIcon
-from PySide2.QtCore import QSettings, Signal
+from PySide2.QtCore import QSettings, Signal, Slot
 
 class AccountsDialog(QDialog):
     account_added = Signal(modules.SourceModule)
     account_deleted = Signal(str)
     account_selected = Signal(modules.SourceModule)
 
+    @Slot(bool)
     def __del_account(self, accountsList):
         account = accountsList.selectedItems()[0].account
         self.account_deleted.emit(account.getId())
@@ -17,6 +18,7 @@ class AccountsDialog(QDialog):
         account.deleteAccount()
         accountsList.takeItem(accountsList.currentRow())
 
+    @Slot(modules.SourceModule)
     def __add_account(self, account):
         accountItem = QListWidgetItem(account.getName())
         accountItem.account = account
@@ -24,11 +26,14 @@ class AccountsDialog(QDialog):
         QSettings().setValue("accounts/{}".format(account.getId()), account.getType())
         self.account_added.emit(account)
 
+    @Slot(bool)
     def __show_modules(self):
         sourcesDialog = SourcesDialog(self)
         sourcesDialog.account_added.connect(self.__add_account)
         del sourcesDialog
 
+    @Slot(bool)
+    @Slot(QListWidgetItem)
     def __select_account(self, accountsList):
         account = accountsList.selectedItems()[0].account
         self.account_selected.emit(account)

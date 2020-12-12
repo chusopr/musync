@@ -4,6 +4,7 @@ from wizard.page3 import Page3
 from dialogs.log import LogDialog
 
 from PySide2.QtWidgets import QWizard, QMessageBox, QStatusBar
+from PySide2.QtCore import Slot
 import modules, html
 
 class MainWindow(QWizard):
@@ -19,11 +20,13 @@ class MainWindow(QWizard):
         errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
         errorMsg.show()
 
+    @Slot(str)
     def __add_log(self, msg, escape=True):
         self.__status.setToolTip(msg)
         if self.__log is not None:
             return self.__log.append(html.escape(msg) if escape else msg)
 
+    @Slot(int)
     def __page_changed(self):
         if self.currentPage() is not None:
             self.currentPage().children()[0].addWidget(self.__status)

@@ -1,6 +1,6 @@
 from wizard import WizardPage
 from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
-from PySide2.QtCore import Qt, Signal
+from PySide2.QtCore import Qt, Signal, Slot
 from PySide2.QtGui import QBrush, QColor
 import threading
 
@@ -36,12 +36,14 @@ class Page2(WizardPage):
 
         self.__new_song_row.connect(self.__add_song_row)
 
+    @Slot(int)
     def __selected_item_changed(self, i):
         if i == 0:
             self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:rgb(127,0,0); }")
         else:
             self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:inherit; }")
 
+    @Slot(int, str, list)
     def __add_song_row(self, side, title, search_results):
         label = QLabel(title)
         label.setToolTip(title)

@@ -1,15 +1,18 @@
 from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
 from PySide2.QtGui import QIcon
+from PySide2.QtCore import Slot
 from datetime import datetime
 
 class LogDialog(QDialog):
     __log = None
     __autoScroll = None
 
+    @Slot(bool)
     def __copy_log(self):
         self.__log.selectAll()
         self.__log.copy()
 
+    @Slot()
     def __scroll(self):
         if self.__autoScroll.isChecked():
             self.__log.verticalScrollBar().setValue(self.__log.verticalScrollBar().maximum())

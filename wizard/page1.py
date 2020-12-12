@@ -4,7 +4,7 @@ import modules
 
 from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide2.QtGui import QColor
-from PySide2.QtCore import QSettings
+from PySide2.QtCore import QSettings, Slot
 import html, json, os, re, threading
 from sys import stderr, modules as imported_modules
 
@@ -24,9 +24,11 @@ class Page1(WizardPage):
         "right": None
     }
 
+    @Slot(modules.SourceModule)
     def __account_added(self, account):
         account.status.connect(self.status.emit)
 
+    @Slot(modules.SourceModule)
     def __account_selected(self, side, account):
         self.setCompleted(False)
 
@@ -54,6 +56,7 @@ class Page1(WizardPage):
         playlistSelect.currentTextChanged.connect(playlistSelect.setToolTip)
         self.findChild(QLabel, side + "PlaylistLabel").setDisabled(False)
 
+    @Slot(bool)
     def __account_select(self, side):
         source_modules = modules.listAll()
         if len(source_modules) == 0:
@@ -180,6 +183,7 @@ class Page1(WizardPage):
         self.status.emit("Finished comparing tracks.")
         self.setCompleted(True)
 
+    @Slot(bool)
     def __unlink_songs(self):
         l = self.findChild(QListWidget, "leftTracklist").currentItem()
         r = self.findChild(QListWidget, "rightTracklist").currentItem()

@@ -2,11 +2,13 @@ import modules
 
 from PySide2.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
 from PySide2.QtGui import QIcon
-from PySide2.QtCore import QSettings, Signal
+from PySide2.QtCore import QSettings, Signal, Slot
 
 class SourcesDialog(QDialog):
     account_added = Signal(modules.SourceModule)
 
+    @Slot(bool)
+    @Slot(QListWidgetItem)
     def __add_account(self, sourcesList):
         module_name = sourcesList.currentItem().text()
         module_slug = sourcesList.currentItem().slug

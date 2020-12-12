@@ -3,7 +3,7 @@ from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
 from PySide2.QtWidgets import QMessageBox as MessageBox
-from PySide2.QtCore import Signal, QObject, QSettings
+from PySide2.QtCore import Signal, QObject, QSettings, Slot
 from selenium import webdriver as selenium_webdriver
 from selenium.common import exceptions as WebExceptions
 

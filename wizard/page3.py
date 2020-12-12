@@ -14,7 +14,8 @@ class Page3(WizardPage):
     __song_processed = Signal(str, str, bool, bool)
     __results_table = None
     __icon_height = None
-    
+
+    @Slot()
     def __add_icon(self, sender, found, result):
         # Get position of the received signal
         r, _, _, _ = self.__results_table.getItemPosition(self.__results_table.indexOf(sender))
@@ -34,6 +35,7 @@ class Page3(WizardPage):
             iconLabel.setPixmap(icon.pixmap(self.__icon_height, self.__icon_height))
             self.__results_table.addWidget(iconLabel, r, 0)
 
+    @Slot(str, str, bool, bool)
     def __add_song_results(self, title, dest, found, result):
         titleLabel = _QLabel(title)
         # The icon needs to be added after the correct size of the label is set
