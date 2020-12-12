@@ -4,8 +4,9 @@ from PySide2.QtCore import Qt, Signal, Slot
 from PySide2.QtGui import QBrush, QColor
 import threading
 
+
 class Page2(WizardPage):
-    __new_song_row =  Signal(int, str, list)
+    __new_song_row = Signal(int, str, list)
     __songs_table = None
 
     def __init__(self):
@@ -67,7 +68,7 @@ class Page2(WizardPage):
         combo.setToolTip(combo.currentText())
         combo.currentTextChanged.connect(combo.setToolTip)
 
-        self.__songs_table.addWidget(combo, self.__songs_table.rowCount()-1, int(not side))
+        self.__songs_table.addWidget(combo, self.__songs_table.rowCount() - 1, int(not side))
 
     def __search_songs(self):
         lList = self.parent().findChild(QListWidget, "leftTracklist")
@@ -85,18 +86,18 @@ class Page2(WizardPage):
 
         # FIXME: crashes if left list is empty
         while lPos < lList.count() or rPos < rList.count():
-            self.status.emit("Searching songs ({} % completed).".format(round((lPos+rPos)*100/(lList.count()+rList.count()))))
+            self.status.emit("Searching songs ({} % completed).".format(round((lPos + rPos) * 100 / (lList.count() + rList.count()))))
             if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
                 lPos = lPos + 1
                 if sources["right"].isReadOnly():
                     continue
-                song = lList.item(lPos-1)
+                song = lList.item(lPos - 1)
                 side = 0
             else:
                 rPos = rPos + 1
                 if sources["left"].isReadOnly():
                     continue
-                song = rList.item(rPos-1)
+                song = rList.item(rPos - 1)
                 side = 1
 
             if "peer" in song.track and song.track["peer"] is not None:
@@ -105,7 +106,7 @@ class Page2(WizardPage):
             search_results = sources["left" if side else "right"].searchTrack(song.track)
             self.__new_song_row.emit(side, "{} - {}".format(song.track["artist"], song.track["title"]), search_results)
 
-        self.status.emit("Searching songs completed.".format(int((lPos+rPos)*100/(lList.count()+rList.count()))))
+        self.status.emit("Searching songs completed.".format(int((lPos + rPos) * 100 / (lList.count() + rList.count()))))
         self.setCompleted(True)
 
     def update(self):

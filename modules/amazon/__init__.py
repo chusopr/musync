@@ -1,6 +1,9 @@
 from urllib.parse import urlparse
-import modules, json
-import os, re
+import modules
+import json
+import re
+import os
+
 
 class amzn_object_exists(object):
     def __call__(self, driver):
@@ -55,7 +58,7 @@ class SourceModule(modules.SourceModule):
                 while cred_chunk:
                     modules.keyring.set_password("muSync", "_".join([self.__id, str(i)]), cred_chunk)
                     i = i + 1
-                    cred_chunk = cred[i*512:(i+1)*512]
+                    cred_chunk = cred[i * 512:(i + 1) * 512]
             else:
                 modules.keyring.set_password("muSync", self.__id, json.dumps([self.__cookies, self.__amzn]))
         except Exception as e:
@@ -71,12 +74,12 @@ class SourceModule(modules.SourceModule):
             self.__authenticated and
             type(self.__cookies) is dict and
             type(self.__amzn)    is dict and
-            "csrf_rnd"       in self.__amzn and
-            "csrf_token"     in self.__amzn and
-            "csrf_ts"        in self.__amzn and
-            "deviceType"     in self.__amzn and
-            "deviceId"       in self.__amzn and
-            "customerId"     in self.__amzn
+            "csrf_rnd"   in self.__amzn and
+            "csrf_token" in self.__amzn and
+            "csrf_ts"    in self.__amzn and
+            "deviceType" in self.__amzn and
+            "deviceId"   in self.__amzn and
+            "customerId" in self.__amzn
         ):
             if not self.authenticate(force=True):
                 return None
@@ -119,7 +122,7 @@ class SourceModule(modules.SourceModule):
         if self.__authenticated and not force:
             return True
 
-        if self.__webdriver == None:
+        if self.__webdriver is None:
             self.__webdriver = modules.WebDriver()
         self.__webdriver.get(self.__login_url)
 
@@ -130,11 +133,11 @@ class SourceModule(modules.SourceModule):
             return False
 
         self.__amzn = {
-            'deviceId'  :     self.__webdriver.execute_script("return amznMusic.appConfig.deviceId;"),
+            'deviceId':       self.__webdriver.execute_script("return amznMusic.appConfig.deviceId;"),
             'customerId':     self.__webdriver.execute_script("return amznMusic.appConfig.customerId;"),
             'deviceType':     self.__webdriver.execute_script("return amznMusic.appConfig.deviceType;"),
-            'csrf_rnd'  :     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.rnd;"),
-            'csrf_ts'   :     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.ts;"),
+            'csrf_rnd':       self.__webdriver.execute_script("return amznMusic.appConfig.csrf.rnd;"),
+            'csrf_ts':        self.__webdriver.execute_script("return amznMusic.appConfig.csrf.ts;"),
             'csrf_token':     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.token;"),
             'atCookieName':   self.__webdriver.execute_script("return amznMusic.appConfig.atCookieName;"),
             'ubidCookieName': self.__webdriver.execute_script("return amznMusic.appConfig.ubidCookieName;")

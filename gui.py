@@ -5,7 +5,10 @@ from dialogs.log import LogDialog
 
 from PySide2.QtWidgets import QWizard, QMessageBox, QStatusBar
 from PySide2.QtCore import Slot
-import modules, html
+import html
+
+import modules
+
 
 class MainWindow(QWizard):
     __log = None

@@ -5,6 +5,7 @@ from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QL
 from PySide2.QtGui import QIcon
 from PySide2.QtCore import QSettings, Signal, Slot
 
+
 class AccountsDialog(QDialog):
     account_added = Signal(modules.SourceModule)
     account_deleted = Signal(str)
@@ -75,8 +76,8 @@ class AccountsDialog(QDialog):
         for account_id in accounts.childKeys():
             module_name = accounts.value(account_id)
 
-            if not module_name in modules.modules:
-                pass # TODO
+            if module_name not in modules.modules:
+                pass  # TODO
 
             account = modules.create_object(module_name)
             account.setId(account_id)

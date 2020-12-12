@@ -5,10 +5,13 @@ from PySide2.QtGui import QIcon
 from PySide2.QtCore import QRect, Signal, Slot
 import threading
 
+
 class _QLabel(QLabel):
     resized = Signal()
+
     def resizeEvent(self, _):
         self.resized.emit()
+
 
 class Page3(WizardPage):
     __song_processed = Signal(str, str, bool, bool)
@@ -41,7 +44,7 @@ class Page3(WizardPage):
         # The icon needs to be added after the correct size of the label is set
         self.__results_table.addWidget(titleLabel, self.__results_table.rowCount(), 1)
         titleLabel.resized.connect(lambda: self.__add_icon(titleLabel, found, result))
-        self.__results_table.addWidget(QLabel(dest), self.__results_table.rowCount()-1, 2)
+        self.__results_table.addWidget(QLabel(dest), self.__results_table.rowCount() - 1, 2)
 
     def __sync_songs(self):
         lLabel = self.parent().findChild(QLabel, "lLabel")
@@ -52,7 +55,7 @@ class Page3(WizardPage):
         rPlaylist = self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentData()
 
         for i in range(1, songs_table.rowCount()):
-            self.status.emit("Syncing songs ({} % completed).".format(round((i-1)*100/(songs_table.rowCount()-1))))
+            self.status.emit("Syncing songs ({} % completed).".format(round((i - 1) * 100 / (songs_table.rowCount() - 1))))
             leftItem = songs_table.itemAtPosition(i, 0).widget()
             rightItem = songs_table.itemAtPosition(i, 1).widget()
 

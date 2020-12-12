@@ -1,6 +1,11 @@
-import modules, json, os, re
+import json
+import re
+import os
 from math import ceil
 from hashlib import md5
+
+import modules
+
 
 class lastfm_createform_ready(object):
     def __call__(self, driver):
@@ -8,12 +13,14 @@ class lastfm_createform_ready(object):
             return driver.execute_script('return document.getElementById("id_name").form;')
         return False
 
+
 class lastfm_apitable_ready(object):
     def __call__(self, driver):
         try:
             return driver.find_element_by_class_name("auth-dropdown-menu-item") and driver.find_element_by_class_name("api-details-table")
         except modules.WebExceptions.NoSuchElementException:
             return False
+
 
 class lastfm_authtoken_success:
     def __call__(self, driver):
@@ -72,7 +79,7 @@ class SourceModule(modules.SourceModule):
 
         try:
             token_request_json = json.loads(token_request.text)
-        except:
+        except Exception:
             pass
 
         if token_request.status_code != 200 or "token" not in token_request_json:
@@ -81,7 +88,7 @@ class SourceModule(modules.SourceModule):
 
         auth_token = token_request_json["token"]
 
-        if self.__webdriver == None:
+        if self.__webdriver is None:
             self.__webdriver = modules.WebDriver()
         self.__webdriver.get("http://www.last.fm/api/auth/?api_key={}&token={}".format(self.__api_key, auth_token))
 
@@ -98,7 +105,7 @@ class SourceModule(modules.SourceModule):
 
         try:
             session_request_json = json.loads(session_request.text)
-        except:
+        except Exception:
             pass
 
         if session_request.status_code != 200 or "session" not in session_request_json or "key" not in session_request_json["session"]:
@@ -113,7 +120,7 @@ class SourceModule(modules.SourceModule):
         if self.__authenticated and not force:
             return True
 
-        if self.__webdriver == None:
+        if self.__webdriver is None:
             self.__webdriver = modules.WebDriver()
         self.__webdriver.get(self.__login_url)
 
@@ -131,7 +138,7 @@ class SourceModule(modules.SourceModule):
             homepage_element = self.__webdriver.find_element_by_id("id_homepage")
             if homepage_element:
                 homepage_element.send_keys("https://musync.link")
-        except:
+        except Exception:
             pass
 
         name_element.send_keys("muSync")
@@ -147,13 +154,13 @@ class SourceModule(modules.SourceModule):
         try:
             userinfo_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
             if userinfo_request.status_code != 200:
-                return False # do something
+                return False  # do something
             userinfo = json.loads(userinfo_request.text)
-        except:
+        except Exception:
             pass
 
         if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
-            return False # do something
+            return False  # do something
 
         self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
         self.__id = "lastfm-{}".format(self.__username)
@@ -182,7 +189,6 @@ class SourceModule(modules.SourceModule):
         ]
 
     def getTracks(self, playlist_name):
-
         tracks = []
         current_page = 1
         total_pages = 1
@@ -202,7 +208,7 @@ class SourceModule(modules.SourceModule):
             for t in playlist["{}tracks".format(playlist_name)]["track"]:
                 tracks.append(self.__track_metadata(t))
             total_pages = int(playlist["{}tracks".format(playlist_name)]["@attr"]["totalPages"])
-            self.status.emit("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100*current_page/total_pages)))
+            self.status.emit("Please wait while the list of songs is being downloaded ({} % completed).".format(round(100 * current_page / total_pages)))
             current_page = current_page + 1
 
         self.status.emit("Finished loading tracks")
@@ -243,7 +249,7 @@ class SourceModule(modules.SourceModule):
                 if (track["artist"].lower() == d["artist"].lower() and track["title"].lower() == d["name"].lower()):
                     verbatim_found = True
 
-            total_pages = ceil(float(search_results["results"]["opensearch:totalResults"])/int(search_results["results"]["opensearch:itemsPerPage"]))
+            total_pages = ceil(float(search_results["results"]["opensearch:totalResults"]) / int(search_results["results"]["opensearch:itemsPerPage"]))
             current_page = current_page + 1
             # Get only one page for now
             break

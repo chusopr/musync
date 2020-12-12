@@ -1,4 +1,8 @@
-import os, importlib.util, re, keyring, requests
+import keyring
+import importlib.util
+import requests
+import re
+import os
 from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
@@ -9,6 +13,7 @@ from selenium.common import exceptions as WebExceptions
 
 ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
+
 
 class WebDriver(selenium_webdriver.Chrome):
     def wait(self, wait_class):
@@ -24,6 +29,7 @@ class WebDriver(selenium_webdriver.Chrome):
                 self.status.emit(e)
                 return False
 
+
 class SourceModule(QObject):
     __id = None
     __authenticated = False
@@ -34,7 +40,7 @@ class SourceModule(QObject):
     def __init__(self):
         super().__init__()
         self.__id = re.sub(r"modules.", "", self.__module__)
-        #@final
+        # @final
         self.__type = re.sub(r"modules.", "", self.__module__)
         try:
             self.__name
@@ -96,16 +102,19 @@ class SourceModule(QObject):
     def requests(self):
         return requests
 
+
 modules = {}
 
+
 def create_object(mod):
-        spec = importlib.util.find_spec("modules.{}".format(mod))
-        module = ModuleType(spec.name)
-        module.__spec__ = spec
-        spec.loader.exec_module(module)
-        m = module.SourceModule()
-        m.initialize()
-        return m
+    spec = importlib.util.find_spec("modules.{}".format(mod))
+    module = ModuleType(spec.name)
+    module.__spec__ = spec
+    spec.loader.exec_module(module)
+    m = module.SourceModule()
+    m.initialize()
+    return m
+
 
 def load():
     for m in os.listdir(ModulesFolder):
@@ -128,5 +137,6 @@ def load():
             continue
         modules[m] = module.SourceModule.getName(module.SourceModule)
 
+
 def listAll():
-  return modules
+    return modules

@@ -4,6 +4,7 @@ from PySide2.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QHBoxLayout, QL
 from PySide2.QtGui import QIcon
 from PySide2.QtCore import QSettings, Signal, Slot
 
+
 class SourcesDialog(QDialog):
     account_added = Signal(modules.SourceModule)
 
@@ -13,8 +14,8 @@ class SourcesDialog(QDialog):
         module_name = sourcesList.currentItem().text()
         module_slug = sourcesList.currentItem().slug
 
-        if not module_slug in modules.modules:
-            pass # TODO
+        if module_slug not in modules.modules:
+            pass  # TODO
 
         account = modules.create_object(module_slug)
 

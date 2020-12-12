@@ -5,13 +5,18 @@ import modules
 from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide2.QtGui import QColor
 from PySide2.QtCore import QSettings, Slot
-import html, json, os, re, threading
+import json
+import html
+import re
+import os
+import threading
 from sys import stderr, modules as imported_modules
 
 try:
     import icu
 except ModuleNotFoundError:
     pass
+
 
 class Page1(WizardPage):
     __threads = {
@@ -41,7 +46,7 @@ class Page1(WizardPage):
 
         playlists = account.getPlaylists()
         if not playlists or len(playlists) == 0:
-            return # TODO do something else than silently fail
+            return  # TODO do something else than silently fail
 
         self.findChild(QLabel, side + "SourceLabel").setText("Selected account: " + account.getName())
         self.findChild(QLabel, side + "SourceLabel").setToolTip("Selected account: " + account.getName())
@@ -98,7 +103,7 @@ class Page1(WizardPage):
         current_playlist = playlist_data["id"] if playlist_data is not None and "id" in playlist_data else None
 
         # No playlist actually selected
-        if current_playlist == None:
+        if current_playlist is None:
             return
 
         # Get tracks for the current playlist
@@ -132,7 +137,7 @@ class Page1(WizardPage):
 
         lPos = rPos = 0
         while lPos < lList.count() or rPos < rList.count():
-            self.status.emit("Comparing tracklists ({} % completed).".format(round((lPos+rPos)*100/(lList.count()+rList.count()))))
+            self.status.emit("Comparing tracklists ({} % completed).".format(round((lPos + rPos) * 100 / (lList.count() + rList.count()))))
             if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
                 thisList = lList
                 otherList = rList
