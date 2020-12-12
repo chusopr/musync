@@ -30,6 +30,7 @@ class AccountsDialog(QDialog):
     def __show_modules(self):
         sourcesDialog = SourcesDialog(self)
         sourcesDialog.account_added.connect(self.__add_account)
+        sourcesDialog.exec()
         del sourcesDialog
 
     @Slot(bool)
@@ -86,4 +87,3 @@ class AccountsDialog(QDialog):
             accountsList.addItem(accountListItem)
 
         accountsList.itemDoubleClicked.connect(lambda: self.__select_account(accountsList))
-        self.show()

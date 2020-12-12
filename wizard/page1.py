@@ -67,6 +67,7 @@ class Page1(WizardPage):
         accountsDialog = AccountsDialog()
         accountsDialog.account_added.connect(self.__account_added)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
+        accountsDialog.exec()
         del accountsDialog
 
     def __playlist_select(self, side):
