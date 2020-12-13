@@ -2,7 +2,7 @@ from wizard import WizardPage
 from dialogs.accounts import AccountsDialog
 import modules
 
-from PySide2.QtWidgets import QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
+from PySide2.QtWidgets import QWizard, QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide2.QtGui import QColor
 from PySide2.QtCore import QSettings, Slot
 import json
@@ -96,6 +96,7 @@ class Page1(WizardPage):
         thread.start()
 
     def __load_tracks(self, side):
+        self.parent().parent().parent().button(QWizard.NextButton).setToolTip("")
         self.setCompleted(False)
 
         playlist_data = self.findChild(QComboBox, side + "Playlist").currentData()
@@ -108,10 +109,6 @@ class Page1(WizardPage):
 
         # Get tracks for the current playlist
         tracks = self.__sources[side].getTracks(current_playlist)
-        # No tracks returned for the current playlist. Do nothing.
-        # TODO Should we do something? Maybe show an error message
-        if not tracks:
-            return
 
         # Add tracks to the tracklist in the main window
         trackList = self.findChild(QListWidget, side + "Tracklist")
@@ -124,11 +121,32 @@ class Page1(WizardPage):
             li.track = t
             li.setToolTip(li.text())
 
-        # Check if the other playlist is also set to compare both
-        if self.findChild(QListWidget, "{}Tracklist".format("left" if side == "right" else "right")).count() > 0:
-            thread = threading.Thread(target=self.__compare_playlists)
-            self.__threads["compare"] = thread
-            thread.start()
+        lp = self.findChild(QComboBox, "leftPlaylist")
+        rp = self.findChild(QComboBox, "rightPlaylist")
+        lt = self.findChild(QListWidget, "leftTracklist")
+        rt = self.findChild(QListWidget, "rightTracklist")
+
+        # Check both playlists are set to compare them
+        if lp.currentData() is not None and rp.currentData() is not None:
+            # Check that at least one playlist is writable
+            if lp.currentData()["writable"] or rp.currentData()["writable"]:
+                # If there is some empty playlist, check it's not the only writable one
+                if (lt.count() > 0 or lp.currentData()["writable"]) and (rt.count() > 0 or rp.currentData()["writable"]):
+                    thread = threading.Thread(target=self.__compare_playlists)
+                    self.__threads["compare"] = thread
+                    thread.start()
+                else:
+                    if lt.count() == 0:
+                        p = lp.currentText()
+                        a = self.findChild(QLabel, "leftSourceLabel").text()
+                    else:
+                        p = rp.currentText()
+                        a = self.findChild(QLabel, "rightSourceLabel").text()
+                    self.status.emit("Playlist {} in {} has no items and no new content can be added since it's read-only".format(p, a))
+                    self.parent().parent().parent().button(QWizard.NextButton).setToolTip("The two selected playlists don't allow continuing")
+            else:
+                self.status.emit("Both playlist are read-only")
+                self.parent().parent().parent().button(QWizard.NextButton).setToolTip("Cannot continue as both playlists are read-only")
 
     def __compare_playlists(self):
         self.setCompleted(False)
