@@ -18,32 +18,12 @@ class Page3(WizardPage):
     __results_table = None
     __icon_height = None
 
-    @Slot()
-    def __add_icon(self, sender, found, result):
-        # Get position of the received signal
-        r, _, _, _ = self.__results_table.getItemPosition(self.__results_table.indexOf(sender))
-        # We are always getting the size from the first label because getting it from the sender does weird things
-        if self.__icon_height is None:
-            self.__icon_height = self.__results_table.itemAtPosition(1, 1).widget().height()
-
-        # Was the icon already added?
-        iconLabel = self.__results_table.itemAtPosition(r, 0)
-        if iconLabel is not None:
-            # Then just resize de existing one
-            iconLabel.setGeometry(QRect(0, 0, self.__icon_height, self.__icon_height))
-        else:
-            # Otherwise, add it
-            icon = QIcon.fromTheme("{}".format("dialog-cancel" if not found else "dialog-ok" if result else "dialog-close"))
-            iconLabel = QLabel()
-            iconLabel.setPixmap(icon.pixmap(self.__icon_height, self.__icon_height))
-            self.__results_table.addWidget(iconLabel, r, 0)
-
     @Slot(str, str, bool, bool)
     def __add_song_results(self, title, dest, found, result):
         titleLabel = _QLabel(title)
         # The icon needs to be added after the correct size of the label is set
-        self.__results_table.addWidget(titleLabel, self.__results_table.rowCount(), 1)
-        titleLabel.resized.connect(lambda: self.__add_icon(titleLabel, found, result))
+        self.__results_table.addWidget(QLabel("❒" if not found else "✔" if result else "✖"), self.__results_table.rowCount(), 0)
+        self.__results_table.addWidget(titleLabel, self.__results_table.rowCount() - 1, 1)
         self.__results_table.addWidget(QLabel(dest), self.__results_table.rowCount() - 1, 2)
 
     def __sync_songs(self):
