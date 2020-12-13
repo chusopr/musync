@@ -175,12 +175,12 @@ class SourceModule(modules.SourceModule):
         amznPlaylists = json.loads(playlists_request.text)
 
         # Add history playlist
-        playlists = [{"id": "my-music", "name": "My music", "writable": True}]
+        playlists = [{"id": "my-music", "name": "My music", "writable": False}]
         for p in amznPlaylists["playlists"]:
             playlist = {
                 "id": p["playlistId"],
                 "name": p["title"],
-                "writable": p["canEditContents"]
+                "writable": False
             }
             playlists.append(playlist)
 
