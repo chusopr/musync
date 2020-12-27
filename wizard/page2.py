@@ -6,21 +6,22 @@ import threading
 
 
 class Page2(WizardPage):
-    __new_song_row = Signal(int, str, list)
+    __new_song_row = Signal(int, int, str, list)
     __songs_table = None
+    __items = [{}, {}]
 
     def __init__(self):
         super().__init__()
         page2Layout = QVBoxLayout(self)
 
         table_header = QHBoxLayout()
-        lLabel = QLabel()
-        lLabel.setObjectName("lLabel")
-        table_header.addWidget(lLabel)
+        label0 = QLabel()
+        label0.setObjectName("label0")
+        table_header.addWidget(label0)
         table_header.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Minimum))
-        rLabel = QLabel()
-        rLabel.setObjectName("rLabel")
-        table_header.addWidget(rLabel)
+        label1 = QLabel()
+        label1.setObjectName("label1")
+        table_header.addWidget(label1)
         page2Layout.addLayout(table_header)
 
         hLine = QFrame(self.__songs_table)
@@ -37,21 +38,25 @@ class Page2(WizardPage):
 
         self.__new_song_row.connect(self.__add_song_row)
 
-    @Slot(int)
-    def __selected_item_changed(self, i):
-        if i == 0:
-            self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:rgb(127,0,0); }")
-        else:
-            self.sender().setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:inherit; }")
+    def getItems(self):
+        return self.__items
 
-    @Slot(int, str, list)
-    def __add_song_row(self, side, title, search_results):
+    @Slot(int)
+    def __selected_item_changed(self, side, pos, combo):
+        self.__items[side]["tracks"][pos]["dst"] = combo.currentData()
+        if combo.currentData() is None:
+            combo.setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:rgb(127,0,0); }")
+        else:
+            combo.setStyleSheet("QComboBox { border:0; } QComboBox:editable { color:inherit; }")
+
+    @Slot(int, int, str, list)
+    def __add_song_row(self, side, pos, title, search_results):
         label = QLabel(title)
         label.setToolTip(title)
         label.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred))
         self.__songs_table.addWidget(label, self.__songs_table.rowCount(), side)
         combo = QComboBox()
-        combo.currentIndexChanged.connect(self.__selected_item_changed)
+        combo.currentIndexChanged.connect(lambda i: self.__selected_item_changed(int(not side), pos, combo))
         combo.setSizePolicy(QSizePolicy(QSizePolicy.Ignored, QSizePolicy.Fixed))
         combo.setStyleSheet("border:0")
 
@@ -70,43 +75,40 @@ class Page2(WizardPage):
 
         self.__songs_table.addWidget(combo, self.__songs_table.rowCount() - 1, int(not side))
 
-    def __search_songs(self):
-        lList = self.parent().findChild(QListWidget, "leftTracklist")
-        rList = self.parent().findChild(QListWidget, "rightTracklist")
-        lPos = rPos = 0
+    def getItems(self):
+        return self.__items
 
-        sources = self.parent().parent().parent().page(0).getSources()
+    def __search_songs(self, sources, playlist0, playlist1, items):
+        pos0 = pos1 = 0
 
-        lCombo = self.parent().parent().parent().findChild(QComboBox, "leftPlaylist")
-        rCombo = self.parent().parent().parent().findChild(QComboBox, "rightPlaylist")
-        self.findChild(QLabel, "lLabel").setText("{} in {}".format(lCombo.currentText(), sources["left"].getName()))
-        self.findChild(QLabel, "lLabel").setToolTip("{} in {}".format(lCombo.currentText(), sources["left"].getName()))
-        self.findChild(QLabel, "rLabel").setText("{} in {}".format(rCombo.currentText(), sources["right"].getName()))
-        self.findChild(QLabel, "rLabel").setToolTip("{} in {}".format(rCombo.currentText(), sources["right"].getName()))
+        self.__items = {0: {"playlist": playlist0, "tracks": {}}, 1: {"playlist": playlist1, "tracks": {}}}
 
         # FIXME: crashes if left list is empty
-        while lPos < lList.count() or rPos < rList.count():
-            self.status.emit("Searching songs ({} % completed).".format(round((lPos + rPos) * 100 / (lList.count() + rList.count()))))
-            if (lPos < rPos and lPos < lList.count()) or ((lPos >= rPos) and (rPos >= rList.count())):
-                lPos = lPos + 1
-                if sources["right"].isReadOnly():
-                    continue
-                song = lList.item(lPos - 1)
+        while pos0 < len(items[0]) or pos1 < len(items[1]):
+            self.status.emit("Searching songs ({} % completed).".format(round((pos0 + pos1) * 100 / (len(items[0]) + len(items[1])))))
+
+            if (pos0 < pos1 and pos0 < len(items[0])) or ((pos0 >= pos1) and (pos1 >= len(items[1]))):
+                pos = pos0
+                pos0 += 1
                 side = 0
             else:
-                rPos = rPos + 1
-                if sources["left"].isReadOnly():
-                    continue
-                song = rList.item(rPos - 1)
+                pos = pos1
+                pos1 += 1
                 side = 1
 
-            if "peer" in song.track and song.track["peer"] is not None:
+            if sources[int(not side)].isReadOnly():
                 continue
 
-            search_results = sources["left" if side else "right"].searchTrack(song.track)
-            self.__new_song_row.emit(side, "{} - {}".format(song.track["artist"], song.track["title"]), search_results)
+            song = items[side][pos]
 
-        self.status.emit("Searching songs completed.".format(int((lPos + rPos) * 100 / (lList.count() + rList.count()))))
+            if "peer" in song and song["peer"] is not None:
+                continue
+
+            search_results = sources[int(not side)].searchTrack(song)
+            self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results)
+            self.__items[int(not side)]["tracks"][pos] = {"src": song, "dst": None}
+
+        self.status.emit("Searching songs completed.".format(int((pos0 + pos1) * 100 / (len(items[0]) + len(items[1])))))
         self.setCompleted(True)
 
     def update(self):
@@ -115,11 +117,22 @@ class Page2(WizardPage):
             self.__songs_table.deleteLater()
             del self.__songs_table
 
+        sources = self.parent().parent().parent().page(0).getSources()
+        items = self.parent().parent().parent().page(0).getItems()
+
+        combo0 = self.parent().parent().parent().findChild(QComboBox, "Playlist0")
+        label0 = self.findChild(QLabel, "label0")
+        label0.setText("{} in {}".format(combo0.currentText(), sources[0].getName()))
+        label0.setToolTip("{} in {}".format(combo0.currentText(), sources[0].getName()))
+        combo1 = self.parent().parent().parent().findChild(QComboBox, "Playlist1")
+        label1 = self.findChild(QLabel, "label1")
+        label1.setText("{} in {}".format(combo1.currentText(), sources[1].getName()))
+        label1.setToolTip("{} in {}".format(combo1.currentText(), sources[1].getName()))
+
         self.__songs_table = QGridLayout()
         self.__songs_table.setObjectName("songs_table")
         self.__songs_table.addItem(QSpacerItem(1, 1, QSizePolicy.Expanding, QSizePolicy.Expanding), 0, 0, 1, 2)
 
         scroll_client.setLayout(self.__songs_table)
 
-        thread = threading.Thread(target=self.__search_songs)
-        thread.start()
+        threading.Thread(target=self.__search_songs, args=(sources, combo0.currentData(), combo1.currentData(), items,)).start()

@@ -6,57 +6,41 @@ from PySide2.QtCore import QRect, Signal, Slot
 import threading
 
 
-class _QLabel(QLabel):
-    resized = Signal()
-
-    def resizeEvent(self, _):
-        self.resized.emit()
-
-
 class Page3(WizardPage):
-    __song_processed = Signal(str, str, bool, bool)
+    __song_processed = Signal(int, dict, bool, bool)
     __results_table = None
     __icon_height = None
+    __sources = {}
 
-    @Slot(str, str, bool, bool)
-    def __add_song_results(self, title, dest, found, result):
-        titleLabel = _QLabel(title)
-        # The icon needs to be added after the correct size of the label is set
+    @Slot(int, str, bool, bool)
+    def __add_song_results(self, src, track, found, result):
         self.__results_table.addWidget(QLabel("❒" if not found else "✔" if result else "✖"), self.__results_table.rowCount(), 0)
-        self.__results_table.addWidget(titleLabel, self.__results_table.rowCount() - 1, 1)
-        self.__results_table.addWidget(QLabel(dest), self.__results_table.rowCount() - 1, 2)
+        self.__results_table.addWidget(QLabel("{} - {}".format(track["artist"], track["title"])), self.__results_table.rowCount() - 1, 1)
+        self.__results_table.addWidget(QLabel(self.__sources[src].getName()), self.__results_table.rowCount() - 1, 2)
 
-    def __sync_songs(self):
-        lLabel = self.parent().findChild(QLabel, "lLabel")
-        rLabel = self.parent().findChild(QLabel, "rLabel")
-        songs_table = self.parent().findChild(QGridLayout, "songs_table")
-        sources = self.parent().parent().parent().page(0).getSources()
-        lPlaylist = self.parent().parent().parent().findChild(QComboBox, "leftPlaylist").currentData()
-        rPlaylist = self.parent().parent().parent().findChild(QComboBox, "rightPlaylist").currentData()
+    def __sync_songs(self, sync_list):
+        playlist0 = self.parent().parent().parent().findChild(QComboBox, "Playlist0").currentData()
+        playlist1 = self.parent().parent().parent().findChild(QComboBox, "Playlist1").currentData()
 
-        for i in range(1, songs_table.rowCount()):
-            self.status.emit("Syncing songs ({} % completed).".format(round((i - 1) * 100 / (songs_table.rowCount() - 1))))
-            leftItem = songs_table.itemAtPosition(i, 0).widget()
-            rightItem = songs_table.itemAtPosition(i, 1).widget()
+        total = sum(len(x[1].items()) for x in sync_list.items())
 
-            src = leftItem.text() if type(leftItem) is QLabel else rightItem.text()
-            dst = rightItem if type(leftItem) is QLabel else leftItem
-            dstLabel = lLabel.text() if type(leftItem) is QLabel else rLabel.text()
+        count = 0
+        for src, items in sync_list.items():
+            for _, track in items["tracks"].items():
+                count += 1
+                self.status.emit("Syncing songs ({} % completed).".format(round(count * 100 / total)))
 
-            if dst.currentData() is None:
-                self.__song_processed.emit(src, dstLabel, False, False)
-            else:
-                self.__song_processed.emit(src, dstLabel, True, sources["right" if type(leftItem) is QLabel else "left"].addTrack(rPlaylist if type(leftItem) is QLabel else lPlaylist, dst.currentData()))
-
-            for w in [leftItem, rightItem]:
-                songs_table.removeWidget(w)
-                w.deleteLater()
+                if track["dst"] is None:
+                    self.__song_processed.emit(src, track["src"], False, False)
+                else:
+                    self.__song_processed.emit(src, track["dst"], True, self.__sources[src].addTrack(playlist1 if src else playlist0, track["dst"]))
 
         self.status.emit("Finished syncing songs")
         self.setCompleted(True)
         self.parent().parent().parent().setButtonLayout([QWizard.Stretch, QWizard.CustomButton1, QWizard.NextButton, QWizard.FinishButton])
 
     def update(self):
+        self.__sources = self.parent().parent().parent().page(0).getSources()
         scroll_client = self.findChild(QWidget, "scrollClient")
         if self.__results_table:
             self.__results_table.deleteLater()
@@ -67,8 +51,7 @@ class Page3(WizardPage):
 
         scroll_client.setLayout(self.__results_table)
 
-        thread = threading.Thread(target=self.__sync_songs)
-        thread.start()
+        threading.Thread(target=self.__sync_songs, args=(self.parent().parent().parent().page(1).getItems(),)).start()
 
     def __init__(self):
         super().__init__()
