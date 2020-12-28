@@ -53,7 +53,8 @@ Fixed in [`71c9fe25`](https://github.com/chusopr/musync/commit/f78e3fc7) and [`1
 Seems to be gone.
 * ~~If you try to add the second source before the first one starts syncing, the dialog box to select the second source will be closed when the first source starts syncing, for some uknown weird reason, and you will have to try adding the source again.~~  
 Seems to be gone.
-* If one playlist is empty in the first step, the second step will crash.
+* ~~If one playlist is empty in the first step, the second step will crash.~~  
+Fixed in [`5cca7b6a`](https://github.com/chusopr/musync/commit/5cca7b6a).
 
 ### Roadmap
 
