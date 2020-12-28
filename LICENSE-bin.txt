@@ -1,0 +1,23 @@
+This software project distributed under the terms of the Artistic License 2.0 as detailed in the LICENSE file.
+
+Additionally, binary releases of this project include others´ pieces of software required for its functioning.
+
+Python by the Python Software Foundation
+Qt5 by The Qt Company
+PySide2 by The Qt Company
+shiboken2 by The Qt Company
+selenium by Software Freedom Conservancy
+keyring by Kang Zhang
+ICU by Unicode Consortium
+PyICU by Andi Vajda
+libdbus by freedesktop.org
+python-dbus by freedesktop.org
+secretstorage by Dmitry Shachnev
+jeepney by Thomas Kluyver
+python-cryptography by The cryptography developers
+certifi by Kenneth Reitz
+Direct3D redistributable by Microsoft Corporation
+OpenSSL by The OpenSSL Authors
+Mesa by Brian Paul
+libffi by Anthony Green
+Visual Studio C Runtime Redistributable by Microsoft Corporation
