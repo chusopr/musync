@@ -105,10 +105,10 @@ margin: 0;
 	background-position: left center;
 	background-size: 40px;
 
-<ul style="list-style: none; margin-left: 2em; padding-left: 0">
-<li style="background-image: url('3/success.svg'); background-repeat: no-repeat; background-position: left 50%; padding-left: 1.25em; background-size: 1em">A check mark means the song was successfully synced.</li>
-<li style="background-image: url('3/unavailable.svg'); background-repeat: no-repeat; background-position: left 50%; padding-left: 1.25em; background-size: 1em">A forbidden mark means the song was not found for syncing or you choose to not sync it.</li>
-<li style="background-image: url('3/failure.svg'); background-repeat: no-repeat; background-position: left 50%; padding-left: 1.25em; background-size: 1em">An error mark means the song failed to sync. You shouldn't see any of these. If you see one, please <a href="{{< relref "bug-report" >}}">report it as a bug</a>.</li>
+<ul>
+<li style='padding-left: 0.5em; list-style-type: "✔"'>A check mark means the song was successfully synced.</li>
+<li style='padding-left: 0.5em; list-style-type: "❒"'>An empty box mark means the song was not found for syncing or you choose to not sync it.</li>
+<li style='padding-left: 0.5em; list-style-type: "✖"'>A cross mark means the song failed to sync. You shouldn't see any of these. If you see one, please <a href="{{< relref "bug-report" >}}">report it as a bug</a>.</li>
 </ul>
 
 The exact look of each mark may differ depending on your Qt theme configuration.

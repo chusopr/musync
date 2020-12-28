@@ -24,11 +24,10 @@ More details about muSync use can be found in the [user guide]({{< relref "/user
 
 ## Requirements
 
-It was tested mostly with Python 3.7, but any Python 3 version should work and has the following dependencies:
+It requires Python 3.8 or later and the following dependencies:
 
-* PyQT5
-* python3-appdirs
-* python3-icu
+* PySide2
+* python3-icu (optional, but recommended)
 * python3-requests
 * python3-selenium
 * chromedriver
@@ -39,8 +38,10 @@ This software is currently under heavy development and the versions currently av
 
 ### Limitations
 
-* Chromedriver path is hardcoed to `/usr/bin/chromedriver`. If the path in your system is different, you will have to change it in `musync/modules/amazon/__init__.py` and `musync/modules/lastfm/__init__.py`.
-* Sensitive data like auth tokens is stored in plaintext files in the user's home directory. That must change to store them securely, probably via [keyring](https://github.com/jaraco/keyring).
+* ~~Chromedriver path is hardcoed to `/usr/bin/chromedriver`. If the path in your system is different, you will have to change it in `musync/modules/amazon/__init__.py` and `musync/modules/lastfm/__init__.py`.~~  
+Fixed in [`f78e3fc7`](https://github.com/chusopr/musync/commit/f78e3fc7).
+* ~~Sensitive data like auth tokens is stored in plaintext files in the user's home directory. That must change to store them securely, probably via [keyring](https://github.com/jaraco/keyring).~~  
+Fixed in [`71c9fe25`](https://github.com/chusopr/musync/commit/f78e3fc7) and [`112cb5fa`](https://github.com/chusopr/musync/commit/112cb5fa)
 * For now, only copying from Amazon Music to Last.fm loved tracks is suppported. More to be implemented.
 * Going back in the wizard is not tested and would have unpredictable results. Hence, the _Back_ button was made unavailable until the ability to go back without making a mess is implemented.
 * If you don't want to sync a song, it will be asked again the next time you run the sync. These decisions need to be remembered.
@@ -48,8 +49,10 @@ This software is currently under heavy development and the versions currently av
 
 ### Bugs
 
-* For some weird reason, adding a new account usually don't work the first time and you have to do it twice.
-* If you try to add the second source before the first one starts syncing, the dialog box to select the second source will be closed when the first source starts syncing, for some uknown weird reason, and you will have to try adding the source again.
+* ~~For some weird reason, adding a new account usually don't work the first time and you have to do it twice.~~  
+Seems to be gone.
+* ~~If you try to add the second source before the first one starts syncing, the dialog box to select the second source will be closed when the first source starts syncing, for some uknown weird reason, and you will have to try adding the source again.~~  
+Seems to be gone.
 * If one playlist is empty in the first step, the second step will crash.
 
 ### Roadmap

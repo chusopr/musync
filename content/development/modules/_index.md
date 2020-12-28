@@ -26,6 +26,134 @@ The module must implement the `modules.SourceModule` interface:
 class SourceModule(modules.SourceModule)
 ```
 
+muSync modules are not allowed to import Python modules other than Python internal ones. E.g., they can import `json`, `re` or `sys`, but they shouldn't import third-party external modules like `requests` or `PySide2`.
+
+The reason for that is that muSync modules are loaded dynamically, which makes it difficult to load external Python modules in compiled binary releases, mainly used for Windows and MacOS releases.
+
+However, muSync's `modules` interface provides an interface to the following external modules:
+
+### `QObject`
+
+The `modules` package exposes Qt's `QObject` class, which allows creating Qt objects in musync modules:
+
+```python
+from modules import QObject
+
+my_object = QObject()
+```
+
+### `MessageBox`
+
+Class alias for Qt's `QMessageBox`. You can instanciate it to display message windows to the user.
+
+Example:
+
+```python
+from modules import MessageBox
+
+MessageBox(MessageBox.Information, "Example message", "This is an example message", modules.MessageBox.Ok).show()
+```
+
+See QtWidget's [C++ documentation for QMessageBox](https://doc.qt.io/qt-5/qmessagebox.html) for more details.
+
+### `requests`
+
+The `requests` module is available from the `modules` package allowing to send HTTP requests and receive a response:
+
+```python
+from modules import requests
+
+playlist_request = .requests.get("http://example.com/playlist.json")
+
+if playlist_request.status_code == 200:
+    playlist = playlist_request.json()
+```
+
+See [`requests` documentation](https://requests.readthedocs.io/) for more details.
+
+### `keyring`
+
+The `keyring` module is available from the `modules` package allowing to store and recover credentials securely using whatever method is provided by the OS for storing credentials (OS dependent):
+
+```python
+from modules import keyring
+
+keyring.set_password("musync", "my_module", "secret")
+
+my_password = modules.keyring.get_password("musync", "my_module")
+```
+
+See [`keyring` documentation](https://github.com/jaraco/keyring) for usage details.
+
+### `WebDriver`
+
+The `modules` package includes a `WebDriver` class which extends Selenium's webdriver class by making its initialization easier and adding the following method:
+
+#### `WebDriver.wait(self, wait_class)`
+
+Receives a class as a parameter whose `__call__` method is called with the `WebDriver` instance as a parameter.  
+The application progress is stopped until the `__call__` method returns `True`.
+
+Example:
+
+```python
+from modules import WebDriver
+
+class count_wait(object):
+    def __call__(self, driver):
+        return driver.execute_script('return document.getElementById("counter-down").textContent' = 0);
+
+driver = WebDriver()
+
+driver.get("https://tombruijn.github.io/counter.js/")
+print('Waiting for counter to finish. Please click "Start counting!" in the website")
+driver.wait(count_wait)
+print("Counting finished!")
+driver.quit()
+```
+
+### `WebExceptions`
+
+Exceptions that can be thrown by the [`WebDriver`](#webdriver) class are available as `WebExceptions` in the `modules` package.
+
+Example:
+
+```python
+from modules import WebExceptions
+
+def get_api_table(self, driver):
+    try:
+        return driver.find_element_by_class_name("auth-dropdown-menu-item")
+    except WebExceptions.NoSuchElementException:
+        return False
+```
+
+Check the [documentation on Selenium exceptions](https://selenium-python.readthedocs.io/api.html#module-selenium.common.exceptions) for more details.
+
+### `Signal` and `Slot`
+
+Allows implementing Qt signals and slots in musync modules:
+
+```python
+from modules import Signal
+
+class my_class:
+    my_signal: Signal(str)
+
+    def my_method(self):
+        self.my_signal.emit("message")
+
+    @Slot(str)
+    def my_slot(self, s):
+        print("Received signal with parameter {}".format(s))
+
+    def __init__(self):
+        self.my_signal.connect(self.my_slot)
+	self.my_method()
+```
+
+For more details, check Qt's [C++ documentation for signals and slots](https://doc.qt.io/qt-5/signalsandslots.html).
+
 ## Attributes
 
 ### `__id`
@@ -34,7 +162,7 @@ The module's `__id` attribute must be set to a unique identifier for each module
 
 Module instances for different accounts must have different `__id`.
 
-For example, a Last.fm module instance for user `johndoe` will have `__id = 'lastfm-johndoe` and another instance of the same module for user `janesmith` will have `__id = 'lastfm-janesmith`.
+For example, a Last.fm module instance for user `johndoe` will have `__id = 'lastfm-johndoe` and another instance of the same module for user `janesmith` will have `__id = 'lastfm-janesmith'`.
 
 This is also used for recoverying the account's settings when restarting the application and also by some modules to know how to initialize their instances of different accounts.
 
@@ -44,11 +172,21 @@ Initially set to `False`, it must be changed to `True` only after a user is succ
 
 If the user authentication is no longer valid, its value must be changed back to `False` until it's again authenticated.
 
+### `__read_only`
+
+Initially set to `False`, it must be changed to `True` if this source doesn't support updating playlists (e.g., [Amazon Music module]({{< relref "user-guide/modules/amazon" >}})).
+
 ## Signals
 
 ### `status(str)`
 
 The `status` signal can be emitted with a `str` parameter whenever some status message needs to be displayed in the application's main status bar and added to the log.
+
+Example:
+
+```python
+self.status.emit("Please wait while the list of songs is being downloaded")
+```
 
 ## Methods
 
@@ -333,12 +471,16 @@ Perform any action that is required when the account is removed from muSync, lik
 * **parameters**: None
 * **returns**: `bool` value representing if the module initialization is complete and an account to use is authenticated
 
-### Private
+#### `settings(self)`
 
-These methods are required for the module's own internal use, but may also be reimplemented if required:
+Returns a `QSettings` object which can be used to store and recover module settings.
 
-#### `__set_session_file(self)`
+Example:
 
-Sets the file path where the module will store its session data, like API keys or authentication cookies.
+```python
+self.settings().setValue("my_module/username", self.__username)
 
-You usually won't need to reimplement this.
+self.__username = self.settings().value("my_module/username")
+```
+
+See QtCore's [C++ documentation for QSettings](https://doc.qt.io/qt-5/qsettings.html) for more details.
