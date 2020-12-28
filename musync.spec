@@ -13,7 +13,8 @@ dynamic_dependencies=[
     ("dbus", "directory"),
     # Needed by secret service keyring backend
     ("secretstorage", "directory"),
-    ("jeepney", "directory")
+    ("jeepney", "directory"),
+    ("cryptography", "directory")
 ]
 
 for d, t in dynamic_dependencies:
