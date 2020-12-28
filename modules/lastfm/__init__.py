@@ -72,7 +72,7 @@ class SourceModule(modules.SourceModule):
         if self.__session_key is not None:
             return self.__session_key
 
-        token_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
+        token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
             self.__api_key,
             md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8"))
         ))
@@ -97,7 +97,7 @@ class SourceModule(modules.SourceModule):
         self.__webdriver.quit()
         self.__webdriver = None
 
-        session_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
+        session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
             auth_token,
             md5("api_key{}methodauth.getsessiontoken{}{}".format(self.__api_key, auth_token, self.__api_secret).encode("utf-8")).hexdigest()
@@ -152,7 +152,7 @@ class SourceModule(modules.SourceModule):
         self.__api_secret = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent;')
 
         try:
-            userinfo_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+            userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
             if userinfo_request.status_code != 200:
                 return False  # do something
             userinfo = json.loads(userinfo_request.text)
@@ -193,7 +193,7 @@ class SourceModule(modules.SourceModule):
         current_page = 1
         total_pages = 1
         while current_page <= total_pages:
-            tracks_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
+            tracks_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
 
             if tracks_request.status_code != 200:
                 break
@@ -226,7 +226,7 @@ class SourceModule(modules.SourceModule):
         verbatim_found = False
 
         while current_page <= total_pages:
-            search_request = self.requests().get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
+            search_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
                 track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
                 track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
                 self.__api_key, current_page
@@ -267,7 +267,7 @@ class SourceModule(modules.SourceModule):
             if not self.__get_session_key():
                 return False
 
-            love_request = self.requests().post("http://ws.audioscrobbler.com/2.0/", data={
+            love_request = modules.requests.post("http://ws.audioscrobbler.com/2.0/", data={
                 "method": "track.love",
                 "track": track["title"],
                 "artist": track["artist"],

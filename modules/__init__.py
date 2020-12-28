@@ -99,9 +99,6 @@ class SourceModule(QObject):
     def settings(self):
         return QSettings()
 
-    def requests(self):
-        return requests
-
 
 modules = {}
 

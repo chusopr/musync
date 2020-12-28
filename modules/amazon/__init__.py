@@ -23,7 +23,7 @@ class SourceModule(modules.SourceModule):
     __domain = "music.amazon.com"
 
     def initialize(self):
-        self.__session = self.requests().Session()
+        self.__session = modules.requests.Session()
         if (self.__id != "amazon"):
             try:
                 self.__name = "Amazon Music account {}".format(re.sub(r"amazon-", "", self.__id))
@@ -41,7 +41,7 @@ class SourceModule(modules.SourceModule):
                         self.__cookies, self.__amzn = json.loads(cred)
                 else:
                     self.__cookies, self.__amzn = json.loads(modules.keyring.get_password("muSync", self.__id))
-                self.requests().utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
+                modules.requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
                 self.__authenticated = True
             except Exception as e:
                 print("Need to re-authenticate: {}".format(str(e)))
@@ -49,7 +49,7 @@ class SourceModule(modules.SourceModule):
     def __save_cache(self):
         try:
             self.settings().setValue("{}/domain".format(self.__id), self.__domain)
-            self.__cookies = self.requests().utils.dict_from_cookiejar(self.__session.cookies)
+            self.__cookies = modules.requests.utils.dict_from_cookiejar(self.__session.cookies)
             if modules.keyring.get_keyring().name == "Windows WinVaultKeyring":
                 # Windows only supports saving credentials up to 512 bytes length
                 cred = json.dumps([self.__cookies, self.__amzn])
@@ -146,7 +146,7 @@ class SourceModule(modules.SourceModule):
         self.__cookies = {}
         for cookie in self.__webdriver.get_cookies():
             self.__cookies[cookie["name"]] = cookie["value"]
-        self.requests().utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
+        modules.requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
 
         music_url = urlparse(self.__webdriver.current_url)
         self.__domain = music_url.hostname
