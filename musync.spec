@@ -1,72 +1,45 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-from importlib import metadata
-from os import sep
-import re
+from sys import platform
 
-block_cipher = None
-
-datas=[('modules', 'modules')]
-
-dynamic_dependencies=[
-    ("selenium", "directory"),
-    ("pyicu", "directory"),
-    # Needed by KWallet keyring backend
-    ("dbus", "directory"),
+datas=[
+    ('modules', 'modules'),
+    (__import__('selenium').__path__[0], 'selenium'),
     # Needed by secret service keyring backend
-    ("secretstorage", "directory"),
-    ("jeepney", "directory"),
-    ("cryptography", "directory")
+    (__import__('secretstorage').__path__[0], "secretstorage"),
+    (__import__('jeepney').__path__[0], "jeepney"),
+    (__import__('cryptography').__path__[0], 'cryptography')
 ]
 
-for d, t in dynamic_dependencies:
-    try:
-        m = __import__(d)
-        if t == "directory":
-            datas.append((m.__path__[0], d))
-        else:
-            datas.append((m.__file__, re.sub(".*\{}".format(sep), "", m.__file__)))
-    except Exception as e:
-        pass
+a = Analysis(
+             ['musync.py'],
+             datas=datas
+)
 
-# Needed for finding entry points for dynamically loading keyring backends
-pattern = re.compile("\{0}keyring-[0-9][^\{0}]+\.(egg|dist)-info$".format(sep))
-for i in metadata.Distribution.discover():
-    if pattern.search(str(i._path)):
-        datas.append((str(i._path), re.sub(".*\{}".format(sep), "", str(i._path))))
-        break
+pyz = PYZ(a.pure)
 
-a = Analysis(['musync.py'],
-             binaries=[],
-             datas=datas,
-             hiddenimports=[],
-             hookspath=[],
-             runtime_hooks=[],
-             excludes=[],
-             win_no_prefer_redirects=False,
-             win_private_assemblies=False,
-             cipher=block_cipher,
-             noarchive=False)
-pyz = PYZ(a.pure, a.zipped_data,
-             cipher=block_cipher)
-exe = EXE(pyz,
+exe = EXE(
+          pyz,
           a.scripts,
+          a.binaries if platform == 'linux' else [],
+          a.datas if platform == 'linux' else [],
           [],
-          exclude_binaries=True,
+          exclude_binaries=False if platform == "linux" else True,
           name='musync',
-          debug=False,
-          bootloader_ignore_signals=False,
-          strip=False,
           upx=True,
-          console=False )
-coll = COLLECT(exe,
-               a.binaries,
-               a.zipfiles,
-               a.datas,
-               strip=False,
-               upx=True,
-               upx_exclude=[],
-               name='musync')
-app = BUNDLE(coll,
-             name='muSync.app',
-             bundle_identifier='link.musync')
+          console=False,
+          target_arch='universal2' if platform == 'darwin' else None,
+)
+
+if platform != "linux":
+    coll = COLLECT(
+                   exe,
+                   a.binaries,
+                   a.zipfiles,
+                   a.datas,
+                   upx=True,
+                   name='musync'
+    )
+    app = BUNDLE(coll,
+                 name='muSync.app',
+                 bundle_identifier='link.musync')
