@@ -1,3 +1,17 @@
+# 0.7.0
+
+* Modernize code:
+  * Migrate to PySide6 (Qt 6).
+  * Update to Selenium 4.
+  * Support Python >= 3.9.
+* Fix modules:
+  * Last.fm:
+    * Fix username retrieval.
+    * Handle CAPTCHA in API create form.
+  * Amazon:
+    * Fix retrieving metadata for some tracks that use a different format.
+    * My Music is now for premium users only.
+
 # 0.6.0
 
 * Add license files for source code and binary releases.

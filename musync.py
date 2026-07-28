@@ -14,7 +14,7 @@ app = QApplication(sys.argv)
 QCoreApplication.setOrganizationName("muSync")
 QCoreApplication.setOrganizationDomain("musync.link")
 QCoreApplication.setApplicationName("muSync")
-QCoreApplication.setApplicationVersion("0.5.0")
+QCoreApplication.setApplicationVersion("0.7.0")
 
 try:
     chrome_options = webdriver.ChromeOptions()
@@ -44,6 +44,6 @@ Current PATH:
         d.exec()
         sys.exit(1)
 
-mainWindow = gui.MainWindow()
+gui.MainWindow()
 
 sys.exit(app.exec())
