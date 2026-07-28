@@ -10,8 +10,23 @@ import modules
 
 class lastfm_createform_ready(object):
     def __call__(self, driver):
-        if driver.current_url == "https://www.last.fm/api/account/create" and driver.find_element(by=By.ID, value="id_name"):
-            return driver.execute_script('return document.getElementById("id_name").form;')
+        try:
+            if driver.current_url.split('#')[0] == "https://www.last.fm/api/account/create" and driver.find_element(by=By.ID, value="id_name"):
+                if driver.execute_script('return typeof grecaptcha !== "undefined"'):
+                    if (driver.execute_script('return grecaptcha.enterprise.getResponse()') != ''):
+                        return driver.execute_script('return document.getElementById("id_name").form;')
+                    else:
+                        if not driver.current_url.endswith('#id_homepage'):
+                            msg = modules.MessageBox(modules.MessageBox.Information, "CAPTCHA required", "Please check the ReCAPTCHA checkbox in Last.fm form to confirm that you are not a robot", modules.MessageBox.Ok)
+                            msg.setModal(True)
+                            msg.exec()
+                            driver.get(f"{driver.current_url}#id_homepage")
+                        return False
+                else:
+                    return driver.execute_script('return document.getElementById("id_name").form;')
+            return False
+        except modules.WebExceptions.NoSuchWindowException:
+            return False
         return False
 
 
