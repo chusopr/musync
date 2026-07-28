@@ -163,7 +163,7 @@ class SourceModule(modules.SourceModule):
 
         self.__webdriver.wait(lastfm_apitable_ready)
 
-        self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("auth-dropdown-menu-item")[0].children[0].textContent;')
+        self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("username")[0].textContent;')
         self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
         self.__api_secret = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent;')
 
