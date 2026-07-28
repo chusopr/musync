@@ -1,8 +1,8 @@
 from wizard import WizardPage
 
-from PySide2.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
-from PySide2.QtGui import QIcon
-from PySide2.QtCore import QRect, Signal, Slot
+from PySide6.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import QRect, Signal, Slot
 import threading
 
 

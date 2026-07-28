@@ -2,9 +2,9 @@ from wizard import WizardPage
 from dialogs.accounts import AccountsDialog
 import modules
 
-from PySide2.QtWidgets import QWizard, QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
-from PySide2.QtGui import QColor
-from PySide2.QtCore import QSettings, Slot, Signal
+from PySide6.QtWidgets import QWizard, QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
+from PySide6.QtGui import QColor
+from PySide6.QtCore import QSettings, Slot, Signal
 import json
 import html
 import re

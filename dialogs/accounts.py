@@ -1,9 +1,9 @@
 from dialogs.sources import SourcesDialog
 import modules
 
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
-from PySide2.QtGui import QIcon
-from PySide2.QtCore import QSettings, Signal, Slot
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QListWidget, QListWidgetItem, QPushButton
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import QSettings, Signal, Slot
 
 
 class AccountsDialog(QDialog):

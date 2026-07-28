@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
-from PySide2.QtGui import QIcon
-from PySide2.QtCore import Slot
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QTextBrowser, QCheckBox, QPushButton
+from PySide6.QtGui import QIcon
+from PySide6.QtCore import Slot
 from datetime import datetime
 
 class LogDialog(QDialog):

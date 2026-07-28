@@ -1,5 +1,5 @@
-from PySide2.QtWidgets import QWizardPage
-from PySide2.QtCore import Signal
+from PySide6.QtWidgets import QWizardPage
+from PySide6.QtCore import Signal
 from abc import abstractmethod
 
 class WizardPage(QWizardPage):

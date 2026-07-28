@@ -1,7 +1,7 @@
 from wizard import WizardPage
-from PySide2.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
-from PySide2.QtCore import Qt, Signal, Slot
-from PySide2.QtGui import QBrush, QColor
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
+from PySide6.QtCore import Qt, Signal, Slot
+from PySide6.QtGui import QBrush, QColor
 import threading
 
 
@@ -62,7 +62,7 @@ class Page2(WizardPage):
 
         if search_results:
             combo.addItem("Don't sync", None)
-            combo.setItemData(0, QBrush(QColor(127, 0, 0)), Qt.TextColorRole)
+            combo.setItemData(0, QBrush(QColor(127, 0, 0)), Qt.ForegroundRole)
             for r in search_results:
                 combo.addItem("{} - {}".format(r["artist"], r["title"]), r)
             combo.setCurrentIndex(1)

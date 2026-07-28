@@ -1,6 +1,6 @@
-from PySide2.QtWidgets import QApplication, QMessageBox
-from PySide2.QtGui import QDesktopServices
-from PySide2.QtCore import QUrl, QCoreApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtGui import QDesktopServices
+from PySide6.QtCore import QUrl, QCoreApplication
 from os import environ, pathsep
 import sys
 
@@ -46,4 +46,4 @@ Current PATH:
 
 mainWindow = gui.MainWindow()
 
-sys.exit(app.exec_())
+sys.exit(app.exec())

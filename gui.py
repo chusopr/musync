@@ -3,8 +3,8 @@ from wizard.page2 import Page2
 from wizard.page3 import Page3
 from dialogs.log import LogDialog
 
-from PySide2.QtWidgets import QWizard, QMessageBox, QStatusBar
-from PySide2.QtCore import Slot
+from PySide6.QtWidgets import QWizard, QMessageBox, QStatusBar
+from PySide6.QtCore import Slot
 import html
 
 import modules
