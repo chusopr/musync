@@ -147,8 +147,8 @@ class Page1(WizardPage):
         if not (
             p0.currentData() is None
             or p1.currentData() is None
-            or self.__threads[0].isAlive()
-            or self.__threads[1].isAlive()
+            or self.__threads[0].is_alive()
+            or self.__threads[1].is_alive()
         ):
             # Check that at least one playlist is writable
             if p0.currentData()["writable"] or p1.currentData()["writable"]:
