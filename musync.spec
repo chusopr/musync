@@ -9,6 +9,7 @@ block_cipher = None
 datas=[('modules', 'modules')]
 
 dynamic_dependencies=[
+    ("selenium", "directory"),
     # Needed by KWallet keyring backend
     ("dbus", "directory"),
     # Needed by secret service keyring backend
