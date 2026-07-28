@@ -198,11 +198,34 @@ class SourceModule(modules.SourceModule):
         return True
 
     def getPlaylists(self):
+        # TODO: test this code. Currently, I'm not premium, so I cannot test it
+        # My Music is a premium feature
+        # Is there a 'My Music' playlist?
+        data = {
+            'maxResults': '1',
+            'Operation': 'selectTrackMetadata',
+            'selectedColumns.member.1': 'artistName',
+            'selectedColumns.member.2': 'title',
+            'ContentType': 'JSON',
+            'customerInfo.customerId': self.__amzn["customerId"],
+            'customerInfo.deviceId': self.__amzn["deviceId"],
+            'customerInfo.deviceType': self.__amzn["deviceType"]
+        }
+        headers = {
+            'csrf-rnd': self.__amzn["csrf_rnd"],
+            'csrf-token': self.__amzn["csrf_token"],
+            'csrf-ts': self.__amzn["csrf_ts"]
+        }
+        mymusic_check = self.__session.post("https://{}/cirrus/".format(self.__domain), data=data, headers=headers)
+        if mymusic_check.status_code == 200:
+            playlists = [{"id": "my-music", "name": "My music", "writable": False}]
+        else:
+            playlists = []
+
         playlists_request = self.__request("cloudplayer/playlists/", "com.amazon.musicplaylist.model.MusicPlaylistService.getOwnedPlaylistsInLibrary")
         amznPlaylists = json.loads(playlists_request.text)
 
         # Add history playlist
-        playlists = [{"id": "my-music", "name": "My music", "writable": False}]
         for p in amznPlaylists["playlists"]:
             playlist = {
                 "id": p["playlistId"],
