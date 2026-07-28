@@ -314,7 +314,7 @@ class Page1(WizardPage):
 
     def __init__(self):
         if "icu" not in imported_modules:
-            print("PyICU was not found. It's recommended to isntall PyICU.")
+            print("PyICU was not found. It's recommended to install PyICU.")
 
         super().__init__()
 
