@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QMessageBox as MessageBox
 from PySide6.QtCore import Signal, QObject, QSettings, Slot
 from selenium import webdriver as selenium_webdriver
 from selenium.common import exceptions as WebExceptions
+from selenium.webdriver.support.wait import WebDriverWait
 
 ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
@@ -19,7 +20,7 @@ class WebDriver(selenium_webdriver.Chrome):
     def wait(self, wait_class):
         while True:
             try:
-                wait = selenium_webdriver.support.ui.WebDriverWait(self, 3)
+                wait = WebDriverWait(self, 3)
                 result = wait.until(wait_class())
                 if result:
                     return result

@@ -19,7 +19,7 @@ QCoreApplication.setApplicationVersion("0.5.0")
 try:
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("headless")
-    chrometest = webdriver.Chrome(executable_path="chromedriver", options=chrome_options)
+    chrometest = webdriver.Chrome(options=chrome_options)
     chrometest.quit()
 except WebDriverException as e:
     if "executable needs to be in PATH" in e.msg:

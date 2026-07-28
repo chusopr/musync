@@ -3,13 +3,14 @@ import re
 import os
 from math import ceil
 from hashlib import md5
+from selenium.webdriver.common.by import By
 
 import modules
 
 
 class lastfm_createform_ready(object):
     def __call__(self, driver):
-        if driver.current_url == "https://www.last.fm/api/account/create" and driver.find_element_by_id("id_name"):
+        if driver.current_url == "https://www.last.fm/api/account/create" and driver.find_element(by=By.ID, value="id_name"):
             return driver.execute_script('return document.getElementById("id_name").form;')
         return False
 
@@ -17,7 +18,7 @@ class lastfm_createform_ready(object):
 class lastfm_apitable_ready(object):
     def __call__(self, driver):
         try:
-            return driver.find_element_by_class_name("auth-dropdown-menu-item") and driver.find_element_by_class_name("api-details-table")
+            return driver.find_element(by=By.CLASS_NAME, value="auth-dropdown-menu-item") and driver.find_element(by=By.CLASS_NAME, value="api-details-table")
         except modules.WebExceptions.NoSuchElementException:
             return False
 
@@ -25,7 +26,7 @@ class lastfm_apitable_ready(object):
 class lastfm_authtoken_success:
     def __call__(self, driver):
         try:
-            return driver.find_element_by_class_name("alert-success")
+            return driver.find_element(by=By.CLASS_NAME, value="alert-success")
         except modules.WebExceptions.NoSuchElementException:
             return False
 
@@ -132,10 +133,10 @@ class SourceModule(modules.SourceModule):
             self.__authenticated = False
             return False
 
-        name_element = self.__webdriver.find_element_by_id("id_name")
+        name_element = self.__webdriver.find_element(by=By.ID, value="id_name")
 
         try:
-            homepage_element = self.__webdriver.find_element_by_id("id_homepage")
+            homepage_element = self.__webdriver.find_element(by=By.ID, value="id_homepage")
             if homepage_element:
                 homepage_element.send_keys("https://musync.link")
         except Exception:
@@ -154,13 +155,13 @@ class SourceModule(modules.SourceModule):
         try:
             userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
             if userinfo_request.status_code != 200:
-                return False  # do something
+                return False  # TODO do something
             userinfo = json.loads(userinfo_request.text)
         except Exception:
             pass
 
         if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
-            return False  # do something
+            return False  # TODO do something
 
         self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
         self.__id = "lastfm-{}".format(self.__username)
