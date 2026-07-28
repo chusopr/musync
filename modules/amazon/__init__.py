@@ -109,13 +109,40 @@ class SourceModule(modules.SourceModule):
 
     def __track_metadata(self, d):
         track = {}
-        track["disc"]     = d["discNum"]      if "discNum"      in d else ""
-        track["track"]    = d["trackNum"]     if "trackNum"     in d else ""
-        track["artist"]   = d["artistName"]   if "artistName"   in d and d["artistName"] != "Unknown Artist" else ""
+        if "requestedMetadata" in d:
+            d = d["requestedMetadata"]
+
+        if "artistName" in d and d["artistName"] != "Unknown Artist":
+            track["artist"] = d["artistName"]
+        elif "artists" in d and type(d["artists"]) is list:
+            for artist in d["artists"]:
+                if artist["name"] == "Unknown Artist":
+                    continue
+                # Find an artist with the "PRIMARY" role
+                if "artistRoles" in artist and type(artist["artistRoles"]) is list:
+                    for role in artist["artistRoles"]:
+                        if role["role"] == "PRIMARY":
+                            # This is the main artist
+                            track["artist"] = artist["name"]
+            # We didn't find an artist with the PRIMARY role,
+            # so just pick the first one
+            if "artist" not in track and len(d["artists"]) > 0:
+                track["artist"] = d["artists"][0]["name"]
+        else:
+            track["artist"] = ""
+
         track["title"]    = d["title"]        if "title"        in d else ""
-        track["duration"] = d["duration"]     if "duration"     in d else ""
         track["album"]    = d["albumName"]    if "albumName"    in d and d["albumName"] != "Unknown Album" else ""
         track["genre"]    = d["primaryGenre"] if "primaryGenre" in d and d["primaryGenre"] != "Unknown Genre" else ""
+        track["disc"]     = d["discNum"]      if "discNum"      in d else ""
+        track["track"]    = d["trackNum"]     if "trackNum"     in d else ""
+        if "duration" in d:
+            track["duration"] = d["duration"]
+        elif "durationSeconds" in d:
+            track["duration"] = d["durationSeconds"]
+        else:
+            track["duration"] = ""
+
         return track
 
     def authenticate(self, force=False):
@@ -273,7 +300,7 @@ class SourceModule(modules.SourceModule):
             tracklist = playlist["playlists"][0]["tracks"]
 
             for t in tracklist:
-                tracks.append(self.__track_metadata(t["metadata"]["requestedMetadata"]))
+                tracks.append(self.__track_metadata(t["metadata"]))
 
             self.status.emit("Finished loading tracks")
 
