@@ -20,7 +20,6 @@ class LogDialog(QDialog):
     def __init__(self, parent):
         super().__init__(parent)
         self.setWindowTitle("muSync - Logs")
-        self.resize(540, 250)
         self.setModal(False)
         logLayout = QVBoxLayout(self)
         self.__log = QTextBrowser(parent)
@@ -42,6 +41,7 @@ class LogDialog(QDialog):
         closeButton.clicked.connect(self.close)
         buttonsLayout.addWidget(closeButton)
         logLayout.addLayout(buttonsLayout)
+        self.setLayout(logLayout)
 
     def append(self, s):
         datestr = str(datetime.now())
