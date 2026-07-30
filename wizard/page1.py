@@ -48,7 +48,7 @@ class Page1(WizardPage):
         account.status.connect(self.status.emit)
         account.log.connect(self.log.emit)
 
-        if not account.isAuthenticated() and not account.authenticate():
+        if not account.isAuthenticated() and not account.authenticate(parent=self):
             # TODO show error
             return False
 
@@ -77,7 +77,7 @@ class Page1(WizardPage):
             errorMsg.show()
             return
 
-        accountsDialog = AccountsDialog()
+        accountsDialog = AccountsDialog(self)
         accountsDialog.account_added.connect(self.__account_added)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
         accountsDialog.exec()

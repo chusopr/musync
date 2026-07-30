@@ -61,7 +61,7 @@ class SourceModule(QObject):
         return self.__type
 
     @abstractmethod
-    def authenticate(self, force=False):
+    def authenticate(self, force=False, parent=None):
         pass
 
     def isReadOnly(self):

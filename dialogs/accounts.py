@@ -41,8 +41,8 @@ class AccountsDialog(QDialog):
         self.account_selected.emit(account)
         self.close()
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
         self.setWindowTitle("muSync - Accounts")
         self.setModal(True)
         
