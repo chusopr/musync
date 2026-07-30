@@ -19,7 +19,7 @@ class SourcesDialog(QDialog):
 
         account = modules.create_object(module_slug)
 
-        if not account.authenticate():
+        if not account.authenticate(parent=self):
             # TODO do something else than failing silently
             return False
 
@@ -34,7 +34,7 @@ class SourcesDialog(QDialog):
         self.close()
 
     def __init__(self, parent):
-        super().__init__()
+        super().__init__(parent)
         self.setWindowTitle("muSync - Sources")
         self.setModal(True)
         dialogLayout = QVBoxLayout(self)
