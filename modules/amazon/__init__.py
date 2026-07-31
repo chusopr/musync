@@ -178,6 +178,7 @@ class SourceModule(modules.SourceModule):
         self.__name = "Amazon Music account {}".format(self.__amzn["customerId"])
 
         self.__save_cache()
+        self.__authenticated = True
 
         browser.accept()
         browser.deleteLater()
