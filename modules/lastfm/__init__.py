@@ -1,6 +1,5 @@
 import json
 import re
-import os
 from math import ceil
 from hashlib import md5
 from PySide6.QtCore import QUrl

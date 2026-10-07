@@ -7,7 +7,7 @@ from types import ModuleType
 from abc import abstractmethod
 from sys import stderr
 from PySide6.QtWidgets import QMessageBox as MessageBox
-from PySide6.QtCore import Signal, QObject, QSettings, Slot
+from PySide6.QtCore import Signal, QObject, QSettings
 
 ModulesFolder = os.path.dirname(__file__)
 ModuleMain = "__init__"
