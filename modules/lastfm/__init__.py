@@ -3,47 +3,10 @@ import re
 import os
 from math import ceil
 from hashlib import md5
-from selenium.webdriver.common.by import By
+from PySide6.QtCore import QUrl
+from dialogs.browser import Browser
 
 import modules
-
-
-class lastfm_createform_ready(object):
-    def __call__(self, driver):
-        try:
-            if driver.current_url.split('#')[0] == "https://www.last.fm/api/account/create" and driver.find_element(by=By.ID, value="id_name"):
-                if driver.execute_script('return typeof grecaptcha !== "undefined"'):
-                    if (driver.execute_script('return grecaptcha.enterprise.getResponse()') != ''):
-                        return driver.execute_script('return document.getElementById("id_name").form;')
-                    else:
-                        if not driver.current_url.endswith('#id_homepage'):
-                            msg = modules.MessageBox(modules.MessageBox.Information, "CAPTCHA required", "Please check the ReCAPTCHA checkbox in Last.fm form to confirm that you are not a robot", modules.MessageBox.Ok)
-                            msg.setModal(True)
-                            msg.exec()
-                            driver.get(f"{driver.current_url}#id_homepage")
-                        return False
-                else:
-                    return driver.execute_script('return document.getElementById("id_name").form;')
-            return False
-        except modules.WebExceptions.NoSuchWindowException:
-            return False
-        return False
-
-
-class lastfm_apitable_ready(object):
-    def __call__(self, driver):
-        try:
-            return driver.find_element(by=By.CLASS_NAME, value="auth-dropdown-menu-item") and driver.find_element(by=By.CLASS_NAME, value="api-details-table")
-        except modules.WebExceptions.NoSuchElementException:
-            return False
-
-
-class lastfm_authtoken_success:
-    def __call__(self, driver):
-        try:
-            return driver.find_element(by=By.CLASS_NAME, value="alert-success")
-        except modules.WebExceptions.NoSuchElementException:
-            return False
 
 
 class SourceModule(modules.SourceModule):
@@ -54,10 +17,39 @@ class SourceModule(modules.SourceModule):
     __api_secret = None
     __session_key = None
 
-    __webdriver = None
     __login_url = "https://last.fm/api/account/create"
 
     __username = None
+
+    def __lastfm_createform_ready(self, browser):
+        if browser.get_url().toString(QUrl.PrettyDecoded | QUrl.RemoveFragment) != "https://www.last.fm/api/account/create":
+            return False
+
+        if browser.run_js("document.getElementById('id_name') == null"):
+            return False
+
+        if browser.run_js("typeof grecaptcha != 'object'"):
+            return False
+        if browser.run_js("typeof grecaptcha.enterprise != 'object'"):
+            return False
+        if browser.run_js("typeof grecaptcha.enterprise.getResponse != 'function'"):
+            return False
+
+        if browser.run_js("grecaptcha.enterprise.getResponse()"):
+            return True
+        elif browser.get_url().fragment() != 'id_homepage':
+            msg = modules.MessageBox(modules.MessageBox.Information, "CAPTCHA required", "Please check the ReCAPTCHA checkbox in Last.fm form to confirm that you are not a robot", modules.MessageBox.Ok, browser)
+            msg.setModal(True)
+            msg.exec()
+            browser.run_js('window.location.hash = "id_homepage"')
+        return False
+
+    def __lastfm_apitable_ready(self, browser):
+        return browser.run_js("""document.getElementsByClassName("auth-dropdown-menu-item").length > 0 &&
+            document.getElementsByClassName("api-details-table").length > 0""")
+
+    def __lastfm_authtoken_success(self, browser):
+        return browser.run_js('document.getElementsByClassName("alert-success")')
 
     def __save_cache(self):
         try:
@@ -104,14 +96,13 @@ class SourceModule(modules.SourceModule):
 
         auth_token = token_request_json["token"]
 
-        if self.__webdriver is None:
-            self.__webdriver = modules.WebDriver()
-        self.__webdriver.get("http://www.last.fm/api/auth/?api_key={}&token={}".format(self.__api_key, auth_token))
+        browser = Browser()
+        browser.show()
+        browser.get(f"http://www.last.fm/api/auth/?api_key={self.__api_key}&token={auth_token}")
 
-        self.__webdriver.wait(lastfm_authtoken_success)
+        browser.wait(__lastfm_authtoken_success)
 
-        self.__webdriver.quit()
-        self.__webdriver = None
+        browser.accept()
 
         session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
@@ -132,40 +123,29 @@ class SourceModule(modules.SourceModule):
 
         return self.__session_key
 
-    def authenticate(self, force=False):
+    def authenticate(self, force=False, parent=None):
         if self.__authenticated and not force:
             return True
 
-        if self.__webdriver is None:
-            self.__webdriver = modules.WebDriver()
-        self.__webdriver.get(self.__login_url)
+        browser = Browser(parent)
+        browser.get(self.__login_url)
+        browser.show()
 
-        create_form = self.__webdriver.wait(lastfm_createform_ready)
-
-        if not create_form:
-            self.__webdriver.quit()
-            self.__webdriver = None
+        if not browser.wait(self.__lastfm_createform_ready):
+            browser.reject()
             self.__authenticated = False
             return False
 
-        name_element = self.__webdriver.find_element(by=By.ID, value="id_name")
+        browser.run_js('document.getElementById("id_homepage").value = "https://musync.link"')
+        browser.run_js('document.getElementById("id_name").value = "muSync"')
 
-        try:
-            homepage_element = self.__webdriver.find_element(by=By.ID, value="id_homepage")
-            if homepage_element:
-                homepage_element.send_keys("https://musync.link")
-        except Exception:
-            pass
+        browser.run_js('document.getElementById("id_name").form.submit()')
 
-        name_element.send_keys("muSync")
+        browser.wait(self.__lastfm_apitable_ready)
 
-        create_form.submit()
-
-        self.__webdriver.wait(lastfm_apitable_ready)
-
-        self.__username = self.__webdriver.execute_script('return document.getElementsByClassName("username")[0].textContent;')
-        self.__api_key = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent;')
-        self.__api_secret = self.__webdriver.execute_script('return document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent;')
+        self.__username = browser.run_js('document.getElementsByClassName("username")[0].textContent')
+        self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
+        self.__api_secret = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent')
 
         try:
             userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
@@ -183,9 +163,7 @@ class SourceModule(modules.SourceModule):
 
         self.__save_cache()
 
-        if self.__webdriver is not None:
-            self.__webdriver.quit()
-            self.__webdriver = None
+        browser.accept()
         self.__authenticated = True
 
         return True
