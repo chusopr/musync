@@ -9,7 +9,7 @@ app = QApplication(sys.argv)
 QCoreApplication.setOrganizationName("muSync")
 QCoreApplication.setOrganizationDomain("musync.link")
 QCoreApplication.setApplicationName("muSync")
-QCoreApplication.setApplicationVersion("0.7.0")
+QCoreApplication.setApplicationVersion("0.8.0")
 
 gui.MainWindow()
 
