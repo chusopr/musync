@@ -1,14 +1,8 @@
-from urllib.parse import urlparse
 import modules
 import json
 import re
 import os
-
-
-class amzn_object_exists(object):
-    def __call__(self, driver):
-        return driver.execute_script('return typeof amznMusic !== "undefined" && "appConfig" in amznMusic && "customerId" in amznMusic.appConfig;')
-
+from dialogs.browser import Browser
 
 class SourceModule(modules.SourceModule):
     __id = "amazon"
@@ -16,11 +10,13 @@ class SourceModule(modules.SourceModule):
     __read_only = True
     __cookies = {}
     __amzn = {}
-    __webdriver = None
     __session = None
 
     __login_url = "https://www.amazon.com/gp/dmusic/cloudplayer/forceSignIn/"
     __domain = "music.amazon.com"
+
+    def __amzn_object_exists(self, browser):
+        return browser.run_js('typeof amznMusic == "object" && "appConfig" in amznMusic && "customerId" in amznMusic.appConfig')
 
     def initialize(self):
         self.__session = modules.requests.Session()
@@ -145,38 +141,37 @@ class SourceModule(modules.SourceModule):
 
         return track
 
-    def authenticate(self, force=False):
+    def authenticate(self, force=False, parent=None):
         if self.__authenticated and not force:
             return True
 
-        if self.__webdriver is None:
-            self.__webdriver = modules.WebDriver()
-        self.__webdriver.get(self.__login_url)
+        browser = Browser(parent)
+        browser.show()
+        browser.get(self.__login_url)
 
-        if not self.__webdriver.wait(amzn_object_exists):
-            self.__webdriver.quit()
-            self.__webdriver = None
+        if not browser.wait(self.__amzn_object_exists):
+            browser.reject()
+            browser.deleteLater()
             self.__authenticated = False
             return False
 
         self.__amzn = {
-            'deviceId':       self.__webdriver.execute_script("return amznMusic.appConfig.deviceId;"),
-            'customerId':     self.__webdriver.execute_script("return amznMusic.appConfig.customerId;"),
-            'deviceType':     self.__webdriver.execute_script("return amznMusic.appConfig.deviceType;"),
-            'csrf_rnd':       self.__webdriver.execute_script("return amznMusic.appConfig.csrf.rnd;"),
-            'csrf_ts':        self.__webdriver.execute_script("return amznMusic.appConfig.csrf.ts;"),
-            'csrf_token':     self.__webdriver.execute_script("return amznMusic.appConfig.csrf.token;"),
-            'atCookieName':   self.__webdriver.execute_script("return amznMusic.appConfig.atCookieName;"),
-            'ubidCookieName': self.__webdriver.execute_script("return amznMusic.appConfig.ubidCookieName;")
+            'deviceId':       browser.run_js("amznMusic.appConfig.deviceId"),
+            'customerId':     browser.run_js("amznMusic.appConfig.customerId"),
+            'deviceType':     browser.run_js("amznMusic.appConfig.deviceType"),
+            'csrf_rnd':       browser.run_js("amznMusic.appConfig.csrf.rnd"),
+            'csrf_ts':        browser.run_js("amznMusic.appConfig.csrf.ts"),
+            'csrf_token':     browser.run_js("amznMusic.appConfig.csrf.token"),
+            'atCookieName':   browser.run_js("amznMusic.appConfig.atCookieName"),
+            'ubidCookieName': browser.run_js("amznMusic.appConfig.ubidCookieName")
         }
 
         self.__cookies = {}
-        for cookie in self.__webdriver.get_cookies():
-            self.__cookies[cookie["name"]] = cookie["value"]
+        for cookie in browser.get_cookies():
+            self.__cookies[cookie.name().toStdString()] = cookie.value().toStdString()
         modules.requests.utils.add_dict_to_cookiejar(self.__session.cookies, self.__cookies)
 
-        music_url = urlparse(self.__webdriver.current_url)
-        self.__domain = music_url.hostname
+        self.__domain = browser.get_url().host()
 
         self.__id = "amazon-{}".format(self.__amzn["customerId"])
         # Not great, but Amazon Music doesn't really provide a friendly user name
@@ -184,10 +179,8 @@ class SourceModule(modules.SourceModule):
 
         self.__save_cache()
 
-        if self.__webdriver is not None:
-            self.__webdriver.quit()
-            self.__webdriver = None
-        self.__authenticated = True
+        browser.accept()
+        browser.deleteLater()
 
         api_check = self.__request("cirrus/v3/", "com.amazon.cirrus.libraryservice.v3.CirrusLibraryServiceExternalV3.reportClientActions", data={"clientActionList": []})
 

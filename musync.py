@@ -1,13 +1,8 @@
-from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtGui import QDesktopServices
-from PySide6.QtCore import QUrl, QCoreApplication
-from os import environ, pathsep
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QCoreApplication
 import sys
 
 import gui
-
-from selenium import webdriver
-from selenium.common.exceptions import WebDriverException
 
 app = QApplication(sys.argv)
 
@@ -15,34 +10,6 @@ QCoreApplication.setOrganizationName("muSync")
 QCoreApplication.setOrganizationDomain("musync.link")
 QCoreApplication.setApplicationName("muSync")
 QCoreApplication.setApplicationVersion("0.7.0")
-
-try:
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("headless")
-    chrometest = webdriver.Chrome(options=chrome_options)
-    chrometest.quit()
-except WebDriverException as e:
-    if "executable needs to be in PATH" in e.msg:
-        d = QMessageBox(QMessageBox.Critical, "Chromedriver not found",
-"""Chromedriver was not found in the path.
-
-Please download Chromedriver from the following address and unzip it in any directory in the system PATH:
-
-https://sites.google.com/a/chromium.org/chromedriver/downloads
-
-Do you want to open this address in your browser?
-
-Current PATH:
-
-{}""".format(environ["PATH"].replace(pathsep, "\n")),
-                    QMessageBox.Yes | QMessageBox.No)
-        if d.exec() == QMessageBox.Yes:
-            QDesktopServices.openUrl(QUrl("https://sites.google.com/a/chromium.org/chromedriver/downloads", QUrl.StrictMode))
-        d = QMessageBox(QMessageBox.Information, "Chromedriver not found",
-                    "Please restart this application after downloading Chromedriver",
-                    QMessageBox.Ok)
-        d.exec()
-        sys.exit(1)
 
 gui.MainWindow()
 

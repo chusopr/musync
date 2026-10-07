@@ -4,7 +4,6 @@ from sys import platform
 
 datas=[
     ('modules', 'modules'),
-    (__import__('selenium').__path__[0], 'selenium'),
     # Needed by secret service keyring backend
     (__import__('secretstorage').__path__[0], "secretstorage"),
     (__import__('jeepney').__path__[0], "jeepney"),
@@ -13,7 +12,9 @@ datas=[
 
 a = Analysis(
              ['musync.py'],
-             datas=datas
+             datas=datas,
+             # Only imported by modules, which are loaded dynamically
+             hiddenimports=['dialogs.browser']
 )
 
 pyz = PYZ(a.pure)
