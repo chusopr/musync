@@ -3,10 +3,9 @@ This software project distributed under the terms of the Artistic License 2.0 as
 Additionally, binary releases of this project include others´ pieces of software required for its functioning.
 
 Python by the Python Software Foundation
-Qt5 by The Qt Company
-PySide2 by The Qt Company
+Qt6 by The Qt Company
+PySide6 by The Qt Company
 shiboken2 by The Qt Company
-selenium by Software Freedom Conservancy
 keyring by Kang Zhang
 ICU by Unicode Consortium
 PyICU by Andi Vajda
