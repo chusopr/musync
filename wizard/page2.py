@@ -1,5 +1,5 @@
 from wizard import WizardPage
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QListWidget, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
+from PySide6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QScrollArea, QGridLayout, QLabel, QComboBox, QSpacerItem, QSizePolicy, QFrame
 from PySide6.QtCore import Qt, Signal, Slot
 from PySide6.QtGui import QBrush, QColor
 import threading

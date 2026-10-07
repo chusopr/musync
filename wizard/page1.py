@@ -4,13 +4,11 @@ import modules
 
 from PySide6.QtWidgets import QWizard, QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide6.QtGui import QColor
-from PySide6.QtCore import QSettings, Slot, Signal
-import json
+from PySide6.QtCore import Slot, Signal
 import html
 import re
-import os
 import threading
-from sys import stderr, modules as imported_modules
+from sys import modules as imported_modules
 
 try:
     import icu

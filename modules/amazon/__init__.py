@@ -1,7 +1,6 @@
 import modules
 import json
 import re
-import os
 from dialogs.browser import Browser
 
 class SourceModule(modules.SourceModule):
