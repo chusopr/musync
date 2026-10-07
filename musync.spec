@@ -4,6 +4,7 @@ from sys import platform
 
 datas=[
     ('modules', 'modules'),
+    ('resources/icon.ico', 'resources'),
     # Needed by secret service keyring backend
     (__import__('secretstorage').__path__[0], "secretstorage"),
     (__import__('jeepney').__path__[0], "jeepney"),
