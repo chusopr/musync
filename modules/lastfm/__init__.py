@@ -233,11 +233,14 @@ class SourceModule(modules.SourceModule):
         verbatim_found = False
 
         while current_page <= total_pages:
-            search_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=track.search&artist={}&track={}&api_key={}&format=json&page={}".format(
-                track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
-                track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
-                self.__api_key, current_page
-            ))
+            search_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/", params={
+                "method": "track.search",
+                "artist": track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
+                "track": track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
+                "api_key": self.__api_key,
+                "format": "json",
+                "page": current_page
+            })
 
             if search_request.status_code != 200:
                 self.status.emit("Error searching for tracks")
