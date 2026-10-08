@@ -161,7 +161,7 @@ class SourceModule(modules.SourceModule):
                     return False  # TODO do something
                 userinfo = json.loads(userinfo_request.text)
             except Exception:
-                pass
+                return False
 
             if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
                 return False  # TODO do something
