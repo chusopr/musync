@@ -68,7 +68,12 @@ class SourceModule(modules.SourceModule):
 
     def __track_metadata(self, d):
         track = {}
-        track["artist"] = d["artist"]["name"] if "artist" in d and "name" in d["artist"] else ""
+        track["artist"] = ""
+        if "artist" in d:
+            if "name" in d["artist"]:
+                track["artist"] = d["artist"]["name"]
+            elif "#text" in d["artist"]:
+                track["artist"] = d["artist"]["#text"]
         track["title"] = d["name"] if "name" in d else ""
         return track
 
