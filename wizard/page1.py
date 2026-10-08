@@ -209,7 +209,7 @@ class Page1(WizardPage):
                 pos1 += 1
 
             song = self.__items[side][pos]
-            if "peer" in song and song["peer"]:
+            if song.get("peer") is not None:
                 continue
 
             found = False
