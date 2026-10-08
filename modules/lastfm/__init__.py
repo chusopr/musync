@@ -48,11 +48,11 @@ class SourceModule(modules.SourceModule):
             document.getElementsByClassName("api-details-table").length > 0""")
 
     def __lastfm_authtoken_success(self, browser):
-        return browser.run_js('document.getElementsByClassName("alert-success")')
+        return browser.run_js('document.getElementsByClassName("alert-success").length == 1')
 
     def __save_cache(self):
         try:
-            modules.keyring.set_password("muSync", self.__id, json.dumps([self.__api_key, self.__api_secret]))
+            modules.keyring.set_password("muSync", self.__id, json.dumps([self.__api_key, self.__api_secret, self.__session_key]))
         except Exception as e:
             print("Failed to cache session data: {}".format(str(e)))
 
@@ -61,7 +61,11 @@ class SourceModule(modules.SourceModule):
             try:
                 self.__username = re.sub(r"lastfm-", "", self.__id)
                 self.__name = "{}'s Last.fm account".format(self.__username)
-                self.__api_key, self.__api_secret = json.loads(modules.keyring.get_password("muSync", self.__id))
+                credentials = json.loads(modules.keyring.get_password("muSync", self.__id))
+                self.__api_key = credentials[0]
+                self.__api_secret = credentials[1]
+                if len(credentials) == 3:
+                    self.__session_key = credentials[2]
                 self.__authenticated = True
             except Exception as e:
                 print("Need to re-authenticate: {}".format(str(e)))
@@ -78,21 +82,21 @@ class SourceModule(modules.SourceModule):
         return track
 
     def isAuthenticated(self):
-        return self.__authenticated
+        return self.__authenticated and self.__session_key is not None
 
-    def __get_session_key(self):
+    def __get_session_key(self, parent):
         if self.__session_key is not None:
             return self.__session_key
 
-        token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.gettoken&api_key={}&api_sig={}&format=json".format(
+        token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={}&api_sig={}&format=json".format(
             self.__api_key,
-            md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8"))
+            md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8")).hexdigest()
         ))
 
         try:
             token_request_json = json.loads(token_request.text)
         except Exception:
-            pass
+            return False
 
         if token_request.status_code != 200 or "token" not in token_request_json:
             self.status.emit("Error authenticating to Last.fm")
@@ -100,13 +104,14 @@ class SourceModule(modules.SourceModule):
 
         auth_token = token_request_json["token"]
 
-        browser = Browser()
+        browser = Browser(parent)
         browser.show()
         browser.get(f"http://www.last.fm/api/auth/?api_key={self.__api_key}&token={auth_token}")
 
-        browser.wait(__lastfm_authtoken_success)
+        browser.wait(self.__lastfm_authtoken_success)
 
         browser.accept()
+        browser.deleteLater()
 
         session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
@@ -117,7 +122,7 @@ class SourceModule(modules.SourceModule):
         try:
             session_request_json = json.loads(session_request.text)
         except Exception:
-            pass
+            return False
 
         if session_request.status_code != 200 or "session" not in session_request_json or "key" not in session_request_json["session"]:
             self.status.emit("Error authenticating to Last.fm")
@@ -128,47 +133,50 @@ class SourceModule(modules.SourceModule):
         return self.__session_key
 
     def authenticate(self, force=False, parent=None):
-        if self.__authenticated and not force:
-            return True
+        if not self.__authenticated or force:
 
-        browser = Browser(parent)
-        browser.get(self.__login_url)
-        browser.show()
+            browser = Browser(parent)
+            browser.get(self.__login_url)
+            browser.show()
 
-        if not browser.wait(self.__lastfm_createform_ready):
-            browser.reject()
-            self.__authenticated = False
+            if not browser.wait(self.__lastfm_createform_ready):
+                browser.reject()
+                self.__authenticated = False
+                return False
+
+            browser.run_js('document.getElementById("id_homepage").value = "https://musync.link"')
+            browser.run_js('document.getElementById("id_name").value = "muSync"')
+
+            browser.run_js('document.getElementById("id_name").form.submit()')
+
+            browser.wait(self.__lastfm_apitable_ready)
+
+            self.__username = browser.run_js('document.getElementsByClassName("username")[0].textContent')
+            self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
+            self.__api_secret = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent')
+
+            try:
+                userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+                if userinfo_request.status_code != 200:
+                    return False  # TODO do something
+                userinfo = json.loads(userinfo_request.text)
+            except Exception:
+                pass
+
+            if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
+                return False  # TODO do something
+
+            self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
+            self.__id = "lastfm-{}".format(self.__username)
+
+            browser.accept()
+            browser.deleteLater()
+            self.__authenticated = True
+
+        if not self.__get_session_key(parent):
             return False
 
-        browser.run_js('document.getElementById("id_homepage").value = "https://musync.link"')
-        browser.run_js('document.getElementById("id_name").value = "muSync"')
-
-        browser.run_js('document.getElementById("id_name").form.submit()')
-
-        browser.wait(self.__lastfm_apitable_ready)
-
-        self.__username = browser.run_js('document.getElementsByClassName("username")[0].textContent')
-        self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
-        self.__api_secret = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent')
-
-        try:
-            userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
-            if userinfo_request.status_code != 200:
-                return False  # TODO do something
-            userinfo = json.loads(userinfo_request.text)
-        except Exception:
-            pass
-
-        if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
-            return False  # TODO do something
-
-        self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
-        self.__id = "lastfm-{}".format(self.__username)
-
         self.__save_cache()
-
-        browser.accept()
-        self.__authenticated = True
 
         return True
 
@@ -262,8 +270,6 @@ class SourceModule(modules.SourceModule):
 
     def addTrack(self, playlist, track):
         if playlist["id"] == "loved":
-            if not self.__get_session_key():
-                return False
 
             love_request = modules.requests.post("http://ws.audioscrobbler.com/2.0/", data={
                 "method": "track.love",
