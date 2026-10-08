@@ -8,12 +8,13 @@ from PySide6.QtCore import Slot, Signal
 import html
 import re
 import threading
-from sys import modules as imported_modules
 
+_HAS_ICU = False
 try:
     import icu
+    _HAS_ICU = True
 except ModuleNotFoundError:
-    pass
+    import unicodedata
 
 
 class Page1(WizardPage):
@@ -194,6 +195,18 @@ class Page1(WizardPage):
             html.escape(self.__sources[int(not side)].getName())
         ))
 
+    def __normalize_text(self, s):
+        if _HAS_ICU:
+            # Convert to latin alphabet
+            s = icu.Transliterator.createInstance('Any-Latin; Latin-ASCII').transliterate(s)
+        else:
+            # Decompose characters
+            s = unicodedata.normalize("NFKD", s)
+            # Remove combining characters
+            s = "".join(c for c in s if not unicodedata.combining(c))
+        # Remove anything that is not a letter or a number and switch to lowercase
+        return re.sub(r'[\W_]+', '', s).casefold()
+
     def __compare_playlists(self):
         pos0 = pos1 = 0
         while pos0 < len(self.__items[0]) or pos1 < len(self.__items[1]):
@@ -218,8 +231,9 @@ class Page1(WizardPage):
                 otherSong = self.__items[not side][j]
                 if otherSong.get("peer") is not None:
                     continue
-                # TODO make regexp configurable
-                if re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate("{} - {}".format(song["artist"], song["title"])) if "icu" in imported_modules else "{} - {}".format(song["artist"], song["title"]), flags=re.IGNORECASE).lower() == re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate("{} - {}".format(otherSong["artist"], otherSong["title"])) if "icu" in imported_modules else "{} - {}".format(otherSong["artist"], otherSong["title"]), flags=re.IGNORECASE).lower():
+                song_text = self.__normalize_text("{} - {}".format(song["artist"], song["title"]))
+                otherSong_text = self.__normalize_text("{} - {}".format(otherSong["artist"], otherSong["title"]))
+                if song_text == otherSong_text and song_text != "":
                     found = True
                     song["peer"] = j
                     otherSong["peer"] = pos
@@ -308,7 +322,7 @@ class Page1(WizardPage):
         sourcesLayout.addLayout(self.__create_source_layout(1))
 
     def __init__(self):
-        if "icu" not in imported_modules:
+        if not _HAS_ICU:
             print("PyICU was not found. It's recommended to install PyICU.")
 
         super().__init__()
