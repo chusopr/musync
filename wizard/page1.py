@@ -216,6 +216,8 @@ class Page1(WizardPage):
 
             for j in range(pos, len(self.__items[not side])):
                 otherSong = self.__items[not side][j]
+                if otherSong.get("peer") is not None:
+                    continue
                 # TODO make regexp configurable
                 if re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate("{} - {}".format(song["artist"], song["title"])) if "icu" in imported_modules else "{} - {}".format(song["artist"], song["title"]), flags=re.IGNORECASE).lower() == re.sub(r'[^a-z]*', '', icu.Transliterator.createInstance('ASCII').transliterate("{} - {}".format(otherSong["artist"], otherSong["title"])) if "icu" in imported_modules else "{} - {}".format(otherSong["artist"], otherSong["title"]), flags=re.IGNORECASE).lower():
                     found = True
@@ -235,13 +237,8 @@ class Page1(WizardPage):
         tl0 = self.findChild(QListWidget, "Tracklist0").currentItem()
         tl1 = self.findChild(QListWidget, "Tracklist1").currentItem()
 
-        # Weird: for some reason, one of l.track and r.track is always None
-        if tl0 is None:
-            tl0 = self.findChild(QListWidget, "Tracklist0").item(tl1.track["peer"])
-        elif tl1 is None:
-            tl1 = self.findChild(QListWidget, "Tracklist1").item(tl0.track["peer"])
-
         tl0.track["peer"] = tl1.track["peer"] = None
+
         tl0.setForeground(QColor(127, 0, 0))
         tl1.setForeground(QColor(127, 0, 0))
 
