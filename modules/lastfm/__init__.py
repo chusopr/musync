@@ -141,6 +141,7 @@ class SourceModule(modules.SourceModule):
 
             if not browser.wait(self.__lastfm_createform_ready):
                 browser.reject()
+                browser.deleteLater()
                 self.__authenticated = False
                 return False
 
@@ -154,6 +155,8 @@ class SourceModule(modules.SourceModule):
             self.__username = browser.run_js('document.getElementsByClassName("username")[0].textContent')
             self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
             self.__api_secret = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent')
+            browser.accept()
+            browser.deleteLater()
 
             try:
                 userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
@@ -169,8 +172,6 @@ class SourceModule(modules.SourceModule):
             self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
             self.__id = "lastfm-{}".format(self.__username)
 
-            browser.accept()
-            browser.deleteLater()
             self.__authenticated = True
 
         if not self.__get_session_key(parent):
