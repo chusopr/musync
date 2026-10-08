@@ -105,8 +105,8 @@ class Page2(WizardPage):
                 continue
 
             search_results = sources[int(not side)].searchTrack(song)
-            self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results)
             self.__items[int(not side)]["tracks"][pos] = {"src": song, "dst": None}
+            self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results)
 
         self.status.emit("Searching songs completed.".format(int((pos0 + pos1) * 100 / (len(items[0]) + len(items[1])))))
         self.setCompleted(True)
