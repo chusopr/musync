@@ -197,11 +197,14 @@ class SourceModule(modules.SourceModule):
             }
         ]
 
-    def getTracks(self, playlist_name):
+    def getTracks(self, playlist_name, cancel):
         tracks = []
         current_page = 1
         total_pages = 1
         while current_page <= total_pages:
+            if cancel.is_set():
+                self.log.emit(f"Loading tracks for {playlist_name} playlist in Last.fm account {self.__username} was cancelled")
+                return
             tracks_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
 
             if tracks_request.status_code != 200:

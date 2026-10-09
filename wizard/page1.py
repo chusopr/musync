@@ -79,11 +79,9 @@ class Page1(WizardPage):
     def __playlist_select(self, side):
         self.setCompleted(False)
 
-        for t in [side, "compare"]:
-            # Stop any thread running on this source
-            if self.__threads[t] is not None and self.__threads[t].is_alive():
-                # TODO: for now we just wait for the thread to finish instead of stopping it
-                self.__threads[t].join()
+        # Wait for any comparison in progress so we don't replace songs being compared
+        if self.__threads["compare"] is not None and self.__threads["compare"].is_alive():
+            self.__threads["compare"].join()
 
         # Remove links in the other tracklist to the ones in this one being removed
         otherList = self.findChild(QListWidget, "Tracklist{}".format(int(not side)))
@@ -100,11 +98,26 @@ class Page1(WizardPage):
         while trackList.count() > 0:
             trackList.takeItem(0)
 
+        # Set the cancel flag for the old thread
+        if self.__cancel[side] is not None:
+            self.__cancel[side].set()
+        # Create a new cancel flag
+        cancel = threading.Event()
+        self.__cancel[side] = cancel
+
         self.__load_id[side] += 1
-        self.__threads[side] = threading.Thread(target=self.__load_tracks, args=(side, self.__load_id[side], self.findChild(QComboBox, "Playlist{}".format(side)).currentData(),))
+        self.__threads[side] = threading.Thread(
+                target=self.__load_tracks,
+                args=(
+                    side,
+                    self.__load_id[side],
+                    cancel,
+                    self.findChild(QComboBox, "Playlist{}".format(side)).currentData(),
+                )
+        )
         self.__threads[side].start()
 
-    def __load_tracks(self, side, load_id, playlist_data):
+    def __load_tracks(self, side, load_id, cancel, playlist_data):
         self.__change_next_tooltip.emit("")
 
         current_playlist = playlist_data["id"] if playlist_data is not None and "id" in playlist_data else None
@@ -114,7 +127,9 @@ class Page1(WizardPage):
             return
 
         # Get tracks for the current playlist
-        tracks = self.__sources[side].getTracks(current_playlist)
+        tracks = self.__sources[side].getTracks(current_playlist, cancel)
+        if cancel.is_set():
+            return
         if tracks:
             self.__add_compare_keys(tracks)
         self.__tracklist_ready.emit(side, load_id, tracks)
@@ -331,6 +346,7 @@ class Page1(WizardPage):
         super().__init__()
 
         self.__load_id = [0, 0]
+        self.__cancel = [None, None]
         self.__build_ui()
 
         self.__change_next_tooltip.connect(self.setNextButtonTooltip)
