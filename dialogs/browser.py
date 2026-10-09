@@ -1,6 +1,7 @@
 from PySide6.QtCore import QEventLoop, QUrl, QTimer, Slot
 from PySide6.QtWidgets import QDialog, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
 from PySide6.QtNetwork import QNetworkCookie
 
 class Browser(QDialog):
@@ -13,13 +14,28 @@ class Browser(QDialog):
         # Instead, we add all the widgets first
         # and let Qt calculate the window size
         layout = QVBoxLayout(self)
+
         self.__webview = QWebEngineView()
+        # Now some QtWebEngine quirks
+        # We create a new profile. Otherwise, the default profile
+        # will be used sharing data between sessions
+        profile = QWebEngineProfile()
+        # We also need to create a new page that will use this profile
+        page = QWebEnginePage(profile, self.__webview)
+        # We set the page as the parent of the profile so
+        # the profile is destroyed when the browser is
+        profile.setParent(page)
+        # Finally, we set this new page as
+        # the current page of the browser
+        self.__webview.setPage(page)
+
         # Setup cookie tracking
         self.__cookies = {}
         cookie_store = self.__webview.page().profile().cookieStore()
         cookie_store.cookieAdded.connect(self.__cookie_added)
         cookie_store.cookieRemoved.connect(self.__cookie_removed)
         cookie_store.loadAllCookies()
+
         layout.addWidget(self.__webview)
         self.setLayout(layout)
         # We save the current size that was calculated by Qt
