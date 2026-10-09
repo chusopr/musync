@@ -84,7 +84,7 @@ class SourceModule(modules.SourceModule):
     def isAuthenticated(self):
         return self.__authenticated and self.__session_key is not None
 
-    def __get_session_key(self, parent):
+    def __get_session_key(self, browser):
         if self.__session_key is not None:
             return self.__session_key
 
@@ -104,14 +104,12 @@ class SourceModule(modules.SourceModule):
 
         auth_token = token_request_json["token"]
 
-        browser = Browser(parent)
         browser.show()
         browser.get(f"http://www.last.fm/api/auth/?api_key={self.__api_key}&token={auth_token}")
 
         browser.wait(self.__lastfm_authtoken_success)
 
         browser.accept()
-        browser.deleteLater()
 
         session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
@@ -133,9 +131,9 @@ class SourceModule(modules.SourceModule):
         return self.__session_key
 
     def authenticate(self, force=False, parent=None):
+        browser = Browser(parent)
         if not self.__authenticated or force:
 
-            browser = Browser(parent)
             browser.get(self.__login_url)
             browser.show()
 
@@ -156,17 +154,19 @@ class SourceModule(modules.SourceModule):
             self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
             self.__api_secret = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[2].cells[1].textContent')
             browser.accept()
-            browser.deleteLater()
 
             try:
                 userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
                 if userinfo_request.status_code != 200:
+                    browser.deleteLater()
                     return False  # TODO do something
                 userinfo = json.loads(userinfo_request.text)
             except Exception:
+                browser.deleteLater()
                 return False
 
             if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
+                browser.deleteLater()
                 return False  # TODO do something
 
             self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
@@ -174,9 +174,11 @@ class SourceModule(modules.SourceModule):
 
             self.__authenticated = True
 
-        if not self.__get_session_key(parent):
+        if not self.__get_session_key(browser):
+            browser.deleteLater()
             return False
 
+        browser.deleteLater()
         self.__save_cache()
 
         return True
