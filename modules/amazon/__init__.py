@@ -94,7 +94,7 @@ class SourceModule(modules.SourceModule):
             "customerId": self.__amzn["customerId"]
         }}
 
-        r = self.__session.post("https://%s/%s" % (self.__domain, endpoint), headers=headers, json=data)
+        r = self.__session.post(f"https://{self.__domain}/{endpoint}", headers=headers, json=data, timeout=30)
 
         if r.status_code == 401 or r.status_code == 400:
             self.__authenticated = False
@@ -209,7 +209,7 @@ class SourceModule(modules.SourceModule):
             'csrf-token': self.__amzn["csrf_token"],
             'csrf-ts': self.__amzn["csrf_ts"]
         }
-        mymusic_check = self.__session.post("https://{}/cirrus/".format(self.__domain), data=data, headers=headers)
+        mymusic_check = self.__session.post(f"https://{self.__domain}/cirrus/", data=data, headers=headers, timeout=30)
         if mymusic_check.status_code == 200:
             playlists = [{"id": "my-music", "name": "My music", "writable": False}]
         else:
@@ -266,7 +266,7 @@ class SourceModule(modules.SourceModule):
                     'csrf-token': self.__amzn["csrf_token"],
                     'csrf-ts': self.__amzn["csrf_ts"]
                 }
-                tracks_request = self.__session.post("https://{}/cirrus/".format(self.__domain), data=data, headers=headers)
+                tracks_request = self.__session.post(f"https://{self.__domain}/cirrus/", data=data, headers=headers, timeout=30)
 
                 if tracks_request.status_code != 200:
                     return False
