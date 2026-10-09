@@ -12,7 +12,7 @@ class Page3(WizardPage):
     __icon_height = None
     __sources = {}
 
-    @Slot(int, str, bool, bool)
+    @Slot(int, dict, bool, bool)
     def __add_song_results(self, src, track, found, result):
         self.__results_table.addWidget(QLabel("❒" if not found else "✔" if result else "✖"), self.__results_table.rowCount(), 0)
         self.__results_table.addWidget(QLabel("{} - {}".format(track["artist"], track["title"])), self.__results_table.rowCount() - 1, 1)
