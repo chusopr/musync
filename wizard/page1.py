@@ -27,7 +27,7 @@ class Page1(WizardPage):
     __items = [[], []]
 
     __change_next_tooltip = Signal(str)
-    __tracklist_ready = Signal(int, list)
+    __tracklist_ready = Signal(int, int, list)
     __match_found = Signal(int, int, int)
     __match_not_found = Signal(int, int)
     __compare_finished = Signal()
@@ -100,10 +100,11 @@ class Page1(WizardPage):
         while trackList.count() > 0:
             trackList.takeItem(0)
 
-        self.__threads[side] = threading.Thread(target=self.__load_tracks, args=(side, self.findChild(QComboBox, "Playlist{}".format(side)).currentData(),))
+        self.__load_id[side] += 1
+        self.__threads[side] = threading.Thread(target=self.__load_tracks, args=(side, self.__load_id[side], self.findChild(QComboBox, "Playlist{}".format(side)).currentData(),))
         self.__threads[side].start()
 
-    def __load_tracks(self, side, playlist_data):
+    def __load_tracks(self, side, load_id, playlist_data):
         self.__change_next_tooltip.emit("")
 
         current_playlist = playlist_data["id"] if playlist_data is not None and "id" in playlist_data else None
@@ -116,13 +117,16 @@ class Page1(WizardPage):
         tracks = self.__sources[side].getTracks(current_playlist)
         if tracks:
             self.__add_compare_keys(tracks)
-        self.__tracklist_ready.emit(side, tracks)
+        self.__tracklist_ready.emit(side, load_id, tracks)
 
     def getItems(self):
         return self.__items
 
-    @Slot(int, list)
-    def __add_tracks(self, side, tracks):
+    @Slot(int, int, list)
+    def __add_tracks(self, side, load_id, tracks):
+        # Check if these results correspond to the current request
+        if load_id != self.__load_id[side]:
+            return
         # Now add the tracks
         trackList = self.findChild(QListWidget, "Tracklist{}".format(side))
 
@@ -326,6 +330,7 @@ class Page1(WizardPage):
 
         super().__init__()
 
+        self.__load_id = [0, 0]
         self.__build_ui()
 
         self.__change_next_tooltip.connect(self.setNextButtonTooltip)
