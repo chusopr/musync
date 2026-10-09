@@ -11,6 +11,6 @@ QCoreApplication.setOrganizationDomain("musync.link")
 QCoreApplication.setApplicationName("muSync")
 QCoreApplication.setApplicationVersion("0.8.0")
 
-gui.MainWindow()
+mainWindow = gui.MainWindow()
 
 sys.exit(app.exec())
