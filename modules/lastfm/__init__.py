@@ -90,8 +90,8 @@ class SourceModule(modules.SourceModule):
 
         token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={}&api_sig={}&format=json".format(
             self.__api_key,
-            md5("api_key{}methodauth.getToken{}".format(self.__api_key, self.__api_secret).encode("utf-8")).hexdigest()
-        ))
+            md5(f"api_key{self.__api_key}methodauth.getToken{self.__api_secret}".encode("utf-8")).hexdigest()
+        ), timeout=30)
 
         try:
             token_request_json = json.loads(token_request.text)
@@ -114,8 +114,8 @@ class SourceModule(modules.SourceModule):
         session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
             self.__api_key,
             auth_token,
-            md5("api_key{}methodauth.getsessiontoken{}{}".format(self.__api_key, auth_token, self.__api_secret).encode("utf-8")).hexdigest()
-        ))
+            md5(f"api_key{self.__api_key}methodauth.getsessiontoken{auth_token}{self.__api_secret}".encode("utf-8")).hexdigest()
+        ), timeout=30)
 
         try:
             session_request_json = json.loads(session_request.text)
@@ -156,7 +156,7 @@ class SourceModule(modules.SourceModule):
             browser.accept()
 
             try:
-                userinfo_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={}&api_key={}&format=json".format(self.__username, self.__api_key))
+                userinfo_request = modules.requests.get(f"http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={self.__username}&api_key={self.__api_key}&format=json", timeout=30)
                 if userinfo_request.status_code != 200:
                     browser.deleteLater()
                     return False  # TODO do something
@@ -205,7 +205,7 @@ class SourceModule(modules.SourceModule):
             if cancel.is_set():
                 self.log.emit(f"Loading tracks for {playlist_name} playlist in Last.fm account {self.__username} was cancelled")
                 return
-            tracks_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=user.get{}tracks&user={}&api_key={}&format=json&page={}".format(playlist_name, self.__username, self.__api_key, current_page))
+            tracks_request = modules.requests.get(f"http://ws.audioscrobbler.com/2.0/?method=user.get{playlist_name}tracks&user={self.__username}&api_key={self.__api_key}&format=json&page={current_page}", timeout=30)
 
             if tracks_request.status_code != 200:
                 break
@@ -245,7 +245,7 @@ class SourceModule(modules.SourceModule):
                 "api_key": self.__api_key,
                 "format": "json",
                 "page": current_page
-            })
+            }, timeout=30)
 
             if search_request.status_code != 200:
                 self.status.emit("Error searching for tracks")
@@ -286,9 +286,9 @@ class SourceModule(modules.SourceModule):
                 "artist": track["artist"],
                 "api_key": self.__api_key,
                 "sk": self.__session_key,
-                "api_sig": md5("api_key{}artist{}methodtrack.lovesk{}track{}{}".format(self.__api_key, track["artist"], self.__session_key, track["title"], self.__api_secret).encode("utf-8")).hexdigest(),
+                "api_sig": md5(f"api_key{self.__api_key}artist{track['artist']}methodtrack.lovesk{self.__session_key}track{track['title']}{self.__api_secret}".encode("utf-8")).hexdigest(),
                 "format": "json"
-            })
+            }, timeout=30)
 
             if love_request.status_code == 200:
                 return True
