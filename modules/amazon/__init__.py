@@ -229,11 +229,14 @@ class SourceModule(modules.SourceModule):
 
         return playlists
 
-    def getTracks(self, playlist):
+    def getTracks(self, playlist, cancel):
         tracks = []
         if playlist == 'my-music':
             nextResultsToken = 0
             while nextResultsToken is not None:
+                if cancel.is_set():
+                    self.log.emit(f"Loading tracks for {playlist} playlist in {self.__name} was cancelled")
+                    return
                 self.status.emit("Please wait while the list of songs is being downloaded ({} donwloaded).".format(nextResultsToken))
                 data = {
                     'maxResults': '100',
@@ -316,6 +319,9 @@ class SourceModule(modules.SourceModule):
             tracklist = playlist["playlists"][0]["tracks"]
 
             for t in tracklist:
+                if cancel.is_set():
+                    self.log.emit(f"Loading tracks for {playlist} playlist in {self.__name} was cancelled")
+                    return
                 tracks.append(self.__track_metadata(t["metadata"]))
 
             self.status.emit("Finished loading tracks")

@@ -58,7 +58,7 @@ class SourceModule(QObject):
         pass
 
     @abstractmethod
-    def getTracks(self, playlist):
+    def getTracks(self, playlist, cancel):
         pass
 
     @abstractmethod
