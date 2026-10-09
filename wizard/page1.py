@@ -308,9 +308,6 @@ class Page1(WizardPage):
         sourceLayout.addWidget(trackList)
         return sourceLayout
 
-    def getSource(self, s):
-        return self._sources[s]
-
     def __build_ui(self):
         page1Layout = QVBoxLayout(self)
 
