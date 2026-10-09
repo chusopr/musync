@@ -1,12 +1,13 @@
 from wizard import WizardPage
 
-from PySide6.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QComboBox, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
+from PySide6.QtWidgets import QWizard, QWidget, QVBoxLayout, QLabel, QScrollArea, QGridLayout, QSpacerItem, QSizePolicy
 from PySide6.QtCore import Signal, Slot
 import threading
 
 
 class Page3(WizardPage):
     __song_processed = Signal(int, dict, bool, bool)
+    __sync_finished = Signal()
     __results_table = None
     __icon_height = None
     __sources = {}
@@ -18,9 +19,6 @@ class Page3(WizardPage):
         self.__results_table.addWidget(QLabel(self.__sources[src].getName()), self.__results_table.rowCount() - 1, 2)
 
     def __sync_songs(self, sync_list):
-        playlist0 = self.parent().parent().parent().findChild(QComboBox, "Playlist0").currentData()
-        playlist1 = self.parent().parent().parent().findChild(QComboBox, "Playlist1").currentData()
-
         total = sum(len(side["tracks"]) for side in sync_list.values())
 
         count = 0
@@ -32,9 +30,13 @@ class Page3(WizardPage):
                 if track["dst"] is None:
                     self.__song_processed.emit(src, track["src"], False, False)
                 else:
-                    self.__song_processed.emit(src, track["dst"], True, self.__sources[src].addTrack(playlist1 if src else playlist0, track["dst"]))
+                    self.__song_processed.emit(src, track["dst"], True, self.__sources[src].addTrack(sync_list[src]["playlist"], track["dst"]))
 
         self.status.emit("Finished syncing songs")
+        self.__sync_finished.emit()
+
+    @Slot()
+    def __finish_sync(self):
         self.setCompleted(True)
         self.parent().parent().parent().setButtonLayout([QWizard.Stretch, QWizard.CustomButton1, QWizard.NextButton, QWizard.FinishButton])
 
@@ -64,3 +66,4 @@ class Page3(WizardPage):
         page3Layout.addWidget(scrollArea)
 
         self.__song_processed.connect(self.__add_song_results)
+        self.__sync_finished.connect(self.__finish_sync)
