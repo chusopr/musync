@@ -120,6 +120,8 @@ class Page1(WizardPage):
 
         # Get tracks for the current playlist
         tracks = self.__sources[side].getTracks(current_playlist)
+        if tracks:
+            self.__add_compare_keys(tracks)
         self.__tracklist_ready.emit(side, tracks)
 
     def getItems(self):
@@ -132,7 +134,6 @@ class Page1(WizardPage):
 
         self.__items[side] = []
         for t in tracks:
-            t["compare_text"] = self.__normalize_text("{} - {}".format(t["artist"], t["title"]))
             self.__items[side].append(t)
             li = QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList)
             li.track = t
@@ -196,17 +197,20 @@ class Page1(WizardPage):
             html.escape(self.__sources[int(not side)].getName())
         ))
 
-    def __normalize_text(self, s):
-        if _HAS_ICU:
-            # Convert to latin alphabet
-            s = icu.Transliterator.createInstance('Any-Latin; Latin-ASCII').transliterate(s)
-        else:
-            # Decompose characters
-            s = unicodedata.normalize("NFKD", s)
-            # Remove combining characters
-            s = "".join(c for c in s if not unicodedata.combining(c))
-        # Remove anything that is not a letter or a number and switch to lowercase
-        return re.sub(r'[\W_]+', '', s).casefold()
+    def __add_compare_keys(self, tracks):
+        transliterator = icu.Transliterator.createInstance('Any-Latin; Latin-ASCII') if _HAS_ICU else None
+        for t in tracks:
+            s = "{} - {}".format(t["artist"], t["title"])
+            if _HAS_ICU:
+                # Convert to latin alphabet
+                s = transliterator.transliterate(s)
+            else:
+                # Decompose characters
+                s = unicodedata.normalize("NFKD", s)
+                # Remove combining characters
+                s = "".join(c for c in s if not unicodedata.combining(c))
+            # Remove anything that is not a letter or a number and switch to lowercase
+            t["compare_key"] = re.sub(r'[\W_]+', '', s).casefold()
 
     def __compare_playlists(self):
         pos0 = pos1 = 0
@@ -223,16 +227,20 @@ class Page1(WizardPage):
                 pos1 += 1
 
             song = self.__items[side][pos]
-            if song.get("peer") is not None or song["compare_text"] != ""
+            if song.get("peer") is not None:
                 continue
 
             found = False
+
+            if song["compare_key"] == "":
+                self.__match_not_found.emit(side, pos)
+                continue
 
             for j in range(pos, len(self.__items[not side])):
                 otherSong = self.__items[not side][j]
                 if otherSong.get("peer") is not None:
                     continue
-                if song["compare_text"] == otherSong["compare_text"]:
+                if song["compare_key"] == otherSong["compare_key"]:
                     found = True
                     song["peer"] = j
                     otherSong["peer"] = pos
