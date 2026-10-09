@@ -4,7 +4,6 @@ from PySide6.QtWebEngineWidgets import QWebEngineView
 from PySide6.QtNetwork import QNetworkCookie
 
 class Browser(QDialog):
-    __cookies = {}
 
     def __init__(self, parent):
         # We don't set the parent immediately
@@ -16,6 +15,7 @@ class Browser(QDialog):
         layout = QVBoxLayout(self)
         self.__webview = QWebEngineView()
         # Setup cookie tracking
+        self.__cookies = {}
         cookie_store = self.__webview.page().profile().cookieStore()
         cookie_store.cookieAdded.connect(self.__cookie_added)
         cookie_store.cookieRemoved.connect(self.__cookie_removed)
