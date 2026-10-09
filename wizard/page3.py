@@ -21,7 +21,7 @@ class Page3(WizardPage):
         playlist0 = self.parent().parent().parent().findChild(QComboBox, "Playlist0").currentData()
         playlist1 = self.parent().parent().parent().findChild(QComboBox, "Playlist1").currentData()
 
-        total = sum(len(x[1].items()) for x in sync_list.items())
+        total = sum(len(side["tracks"]) for side in sync_list.values())
 
         count = 0
         for src, items in sync_list.items():
