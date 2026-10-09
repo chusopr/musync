@@ -132,6 +132,7 @@ class Page1(WizardPage):
 
         self.__items[side] = []
         for t in tracks:
+            t["compare_text"] = self.__normalize_text("{} - {}".format(t["artist"], t["title"]))
             self.__items[side].append(t)
             li = QListWidgetItem("{} - {}".format(t["artist"], t["title"]), trackList)
             li.track = t
@@ -222,7 +223,7 @@ class Page1(WizardPage):
                 pos1 += 1
 
             song = self.__items[side][pos]
-            if song.get("peer") is not None:
+            if song.get("peer") is not None or song["compare_text"] != ""
                 continue
 
             found = False
@@ -231,9 +232,7 @@ class Page1(WizardPage):
                 otherSong = self.__items[not side][j]
                 if otherSong.get("peer") is not None:
                     continue
-                song_text = self.__normalize_text("{} - {}".format(song["artist"], song["title"]))
-                otherSong_text = self.__normalize_text("{} - {}".format(otherSong["artist"], otherSong["title"]))
-                if song_text == otherSong_text and song_text != "":
+                if song["compare_text"] == otherSong["compare_text"]:
                     found = True
                     song["peer"] = j
                     otherSong["peer"] = pos
