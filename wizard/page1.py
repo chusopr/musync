@@ -63,6 +63,22 @@ class Page1(WizardPage):
         playlistSelect.setDisabled(False)
         self.findChild(QLabel, "PlaylistLabel{}".format(side)).setDisabled(False)
 
+    @Slot(str)
+    def __account_deleted(self, account):
+        for side in [0, 1]:
+            if self.__sources[side] is not None and self.__sources[side].getId() == account:
+                self.setCompleted(False)
+                playlistSelect = self.findChild(QComboBox, f"Playlist{side}")
+                playlistSelect.setDisabled(True)
+                playlistSelect.clear()
+                playlistLabel = self.findChild(QLabel, f"PlaylistLabel{side}")
+                playlistLabel.setDisabled(True)
+                playlistLabel.setText("Selected playlist:")
+                sourceLabel = self.findChild(QLabel, f"SourceLabel{side}")
+                sourceLabel.setText("Selected account: None")
+                sourceLabel.setToolTip("")
+                self.__sources[side] = None
+
     @Slot(bool)
     def __account_select(self, side):
         source_modules = modules.listAll()
@@ -73,6 +89,7 @@ class Page1(WizardPage):
 
         accountsDialog = AccountsDialog(self)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
+        accountsDialog.account_deleted.connect(lambda account: self.__account_deleted(account))
         accountsDialog.exec()
         del accountsDialog
 
