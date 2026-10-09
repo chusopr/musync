@@ -37,10 +37,6 @@ class Page1(WizardPage):
         self.parent().parent().parent().button(QWizard.NextButton).setToolTip(str)
 
     @Slot(modules.SourceModule)
-    def __account_added(self, account):
-        account.status.connect(self.status.emit)
-
-    @Slot(modules.SourceModule)
     def __account_selected(self, side, account):
         self.setCompleted(False)
 
@@ -65,7 +61,6 @@ class Page1(WizardPage):
         for playlist in playlists:
             playlistSelect.addItem(playlist["name"], playlist)
         playlistSelect.setDisabled(False)
-        playlistSelect.currentTextChanged.connect(playlistSelect.setToolTip)
         self.findChild(QLabel, "PlaylistLabel{}".format(side)).setDisabled(False)
 
     @Slot(bool)
@@ -77,7 +72,6 @@ class Page1(WizardPage):
             return
 
         accountsDialog = AccountsDialog(self)
-        accountsDialog.account_added.connect(self.__account_added)
         accountsDialog.account_selected.connect(lambda account: self.__account_selected(side, account))
         accountsDialog.exec()
         del accountsDialog
@@ -299,6 +293,7 @@ class Page1(WizardPage):
         playlistSelect.setDisabled(True)
         playlistSelect.setObjectName("Playlist{}".format(side))
         playlistSelect.currentIndexChanged.connect(lambda: self.__playlist_select(side))
+        playlistSelect.currentTextChanged.connect(playlistSelect.setToolTip)
         selectedSourceLayout.addWidget(playlistSelect, 1, 1)
         sourceLayout.addWidget(selectedSourceFrame)
 

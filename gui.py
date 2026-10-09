@@ -34,6 +34,8 @@ class MainWindow(QWizard):
         if self.currentPage() is not None:
             self.currentPage().children()[0].addWidget(self.__status)
             self.currentPage().update()
+            # TODO: This is fine for now because there is no back button, but would
+            # cause duplicated connections if a back button is added (unlikely)
             self.currentPage().status.connect(lambda s: self.__status.showMessage(self.__add_log(s, True)))
 
     def buildUI(self):

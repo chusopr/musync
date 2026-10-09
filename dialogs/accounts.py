@@ -7,7 +7,6 @@ from PySide6.QtCore import QSettings, Signal, Slot
 
 
 class AccountsDialog(QDialog):
-    account_added = Signal(modules.SourceModule)
     account_deleted = Signal(str)
     account_selected = Signal(modules.SourceModule)
 
@@ -25,7 +24,6 @@ class AccountsDialog(QDialog):
         accountItem.account = account
         self.findChild(QListWidget, "accountsList").addItem(accountItem)
         QSettings().setValue("accounts/{}".format(account.getId()), account.getType())
-        self.account_added.emit(account)
 
     @Slot(bool)
     def __show_modules(self):
