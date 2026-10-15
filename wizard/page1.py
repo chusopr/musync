@@ -182,7 +182,13 @@ class Page1(WizardPage):
             or self.__threads[1].is_alive()
         ):
             # Check that at least one playlist is writable
-            if p0.currentData()["writable"] or p1.currentData()["writable"]:
+            if self.__sources[0].getId() == self.__sources[1].getId() and p0.currentData()["id"] == p1.currentData()["id"]:
+                self.status.emit("Both playlist are the same")
+                self.__change_next_tooltip.emit("Cannot continue as both playlists are the same")
+            elif not p0.currentData()["writable"] and not p1.currentData()["writable"]:
+                self.status.emit("Both playlist are read-only")
+                self.__change_next_tooltip.emit("Cannot continue as both playlists are read-only")
+            else:
                 # If there is some empty playlist, check it's not the only writable one
                 if (t0.count() > 0 or p0.currentData()["writable"]) and (t1.count() > 0 or p1.currentData()["writable"]):
                     self.__threads["compare"] = threading.Thread(target=self.__compare_playlists)
@@ -190,15 +196,12 @@ class Page1(WizardPage):
                 else:
                     if t0.count() == 0:
                         p = p0.currentText()
-                        a = self.findChild(QLabel, "SourceLabel0").text()
+                        a = self.__sources[0].getName()
                     else:
                         p = p1.currentText()
-                        a = self.findChild(QLabel, "SourceLabel1").text()
-                    self.status.emit("Playlist {} in {} has no items and no new content can be added since it's read-only".format(p, a))
+                        a = self.__sources[1].getName()
+                    self.status.emit(f"Playlist {p} in {a} has no items and no new content can be added since it's read-only")
                     self.__change_next_tooltip.emit("The two selected playlists don't allow continuing")
-            else:
-                self.status.emit("Both playlist are read-only")
-                self.__change_next_tooltip.emit("Cannot continue as both playlists are read-only")
 
     @Slot(int, int, int)
     def __highlight_match(self, side, pos, match):
