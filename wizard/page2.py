@@ -96,7 +96,7 @@ class Page2(WizardPage):
                 pos1 += 1
                 side = 1
 
-            if sources[int(not side)].isReadOnly():
+            if sources[int(not side)].isReadOnly() or (side == 1 and not playlist0["writable"]) or (side == 0 and not playlist1["writable"]):
                 continue
 
             song = items[side][pos]
