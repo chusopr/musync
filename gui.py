@@ -5,6 +5,7 @@ from dialogs.log import LogDialog
 
 from PySide6.QtWidgets import QWizard, QMessageBox, QStatusBar
 from PySide6.QtCore import Slot
+from sys import stderr
 import html
 
 import modules
@@ -17,11 +18,12 @@ class MainWindow(QWizard):
     def __init__(self):
         super().__init__()
         self.buildUI()
-        modules.load()
+        modules.load(self.__bogus_module)
 
-    def __bogus_module(self, module_name):
-        errorMsg = QMessageBox(QMessageBox.Critical, "Bogus module", module_name + " module is not working properly", QMessageBox.Ok, self)
-        errorMsg.show()
+    def __bogus_module(self, module_name, reason=""):
+        error_string = f"{module_name} module will not be used: {'invalid module' if reason == '' else reason}."
+        QMessageBox(QMessageBox.Critical, "Bogus module", error_string, QMessageBox.Ok, self).show()
+        print(error_string, file=stderr)
 
     @Slot(str)
     def __add_log(self, msg, escape=True):
