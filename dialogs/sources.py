@@ -13,9 +13,6 @@ class SourcesDialog(QDialog):
     def __add_account(self, sourcesList):
         module_slug = sourcesList.currentItem().slug
 
-        if module_slug not in modules.modules:
-            pass  # TODO
-
         account = modules.create_object(module_slug)
 
         if not account.authenticate(parent=self):
