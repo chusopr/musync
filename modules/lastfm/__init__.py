@@ -89,12 +89,11 @@ class SourceModule(modules.SourceModule):
         if self.__session_key is not None:
             return self.__session_key
 
-        token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={}&api_sig={}&format=json".format(
-            self.__api_key,
-            md5(f"api_key{self.__api_key}methodauth.getToken{self.__api_secret}".encode("utf-8")).hexdigest()
-        ), timeout=30)
-
         try:
+            token_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key={}&api_sig={}&format=json".format(
+                self.__api_key,
+                md5(f"api_key{self.__api_key}methodauth.getToken{self.__api_secret}".encode("utf-8")).hexdigest()
+            ), timeout=30)
             token_request_json = json.loads(token_request.text)
         except Exception:
             return False
@@ -108,17 +107,21 @@ class SourceModule(modules.SourceModule):
         browser.show()
         browser.get(f"http://www.last.fm/api/auth/?api_key={self.__api_key}&token={auth_token}")
 
-        browser.wait(self.__lastfm_authtoken_success)
+        if not browser.wait(self.__lastfm_authtoken_success):
+            browser.reject()
+            browser.deleteLater()
+            self.__authenticated = False
+            self.status.emit("Authentication to Last.fm cancelled")
+            return False
 
         browser.accept()
 
-        session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
-            self.__api_key,
-            auth_token,
-            md5(f"api_key{self.__api_key}methodauth.getsessiontoken{auth_token}{self.__api_secret}".encode("utf-8")).hexdigest()
-        ), timeout=30)
-
         try:
+            session_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/?method=auth.getsession&api_key={}&token={}&api_sig={}&format=json".format(
+                self.__api_key,
+                auth_token,
+                md5(f"api_key{self.__api_key}methodauth.getsessiontoken{auth_token}{self.__api_secret}".encode("utf-8")).hexdigest()
+            ), timeout=30)
             session_request_json = json.loads(session_request.text)
         except Exception:
             return False
@@ -150,7 +153,12 @@ class SourceModule(modules.SourceModule):
 
             browser.run_js('document.getElementById("id_name").form.submit()')
 
-            browser.wait(self.__lastfm_apitable_ready)
+            if not browser.wait(self.__lastfm_apitable_ready):
+                browser.reject()
+                browser.deleteLater()
+                self.__authenticated = False
+                self.status.emit("Authentication to Last.fm cancelled")
+                return False
 
             self.__username = browser.run_js('document.getElementsByClassName("username")[0].textContent')
             self.__api_key = browser.run_js('document.getElementsByClassName("api-details-table")[0].rows[1].cells[1].textContent')
@@ -214,7 +222,12 @@ class SourceModule(modules.SourceModule):
             if cancel.is_set():
                 self.log.emit(f"Loading tracks for {playlist_name} playlist in Last.fm account {self.__username} was cancelled")
                 return
-            tracks_request = modules.requests.get(f"http://ws.audioscrobbler.com/2.0/?method=user.get{playlist_name}tracks&user={self.__username}&api_key={self.__api_key}&format=json&page={current_page}", timeout=30)
+            try:
+                tracks_request = modules.requests.get(f"http://ws.audioscrobbler.com/2.0/?method=user.get{playlist_name}tracks&user={self.__username}&api_key={self.__api_key}&format=json&page={current_page}", timeout=30)
+            except Exception as e:
+                self.status.emit(f"Failed loading playlist at page {current_page}")
+                self.log.emit(escape(str(e)))
+                break
 
             if tracks_request.status_code != 200:
                 break
@@ -247,14 +260,19 @@ class SourceModule(modules.SourceModule):
         verbatim_found = False
 
         while current_page <= total_pages:
-            search_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/", params={
-                "method": "track.search",
-                "artist": track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
-                "track": track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
-                "api_key": self.__api_key,
-                "format": "json",
-                "page": current_page
-            }, timeout=30)
+            try:
+                search_request = modules.requests.get("http://ws.audioscrobbler.com/2.0/", params={
+                    "method": "track.search",
+                    "artist": track["search_artist"] if "search_artist" in track and track["search_artist"] != "" else track["artist"],
+                    "track": track["search_title"]  if "search_title"  in track and track["search_title"]  != "" else track["title"],
+                    "api_key": self.__api_key,
+                    "format": "json",
+                    "page": current_page
+                }, timeout=30)
+            except Exception as e:
+                self.status.emit("Failed loading song search results")
+                self.log.emit(escape(str(e)))
+                break
 
             if search_request.status_code != 200:
                 self.status.emit("Error searching for tracks")
