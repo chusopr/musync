@@ -73,9 +73,8 @@ class AccountsDialog(QDialog):
         accounts.beginGroup("accounts")
         for account_id in accounts.childKeys():
             module_name = accounts.value(account_id)
-
-            if module_name not in modules.modules:
-                pass  # TODO
+            if module_name not in modules.listAll():
+                continue
 
             account = modules.create_object(module_name)
             account.setId(account_id)
