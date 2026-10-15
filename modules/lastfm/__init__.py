@@ -1,5 +1,6 @@
 import json
 import re
+from html import escape
 from math import ceil
 from hashlib import md5
 from PySide6.QtCore import QUrl
@@ -141,6 +142,7 @@ class SourceModule(modules.SourceModule):
                 browser.reject()
                 browser.deleteLater()
                 self.__authenticated = False
+                self.status.emit("Authentication to Last.fm cancelled")
                 return False
 
             browser.run_js('document.getElementById("id_homepage").value = "https://musync.link"')
@@ -159,15 +161,21 @@ class SourceModule(modules.SourceModule):
                 userinfo_request = modules.requests.get(f"http://ws.audioscrobbler.com/2.0/?method=user.getinfo&user={self.__username}&api_key={self.__api_key}&format=json", timeout=30)
                 if userinfo_request.status_code != 200:
                     browser.deleteLater()
-                    return False  # TODO do something
+                    self.status.emit("Error getting Last.fm user details")
+                    self.log.emit(escape(userinfo_request.text))
+                    return False
                 userinfo = json.loads(userinfo_request.text)
-            except Exception:
+            except Exception as e:
                 browser.deleteLater()
+                self.status.emit("Error getting Last.fm user details")
+                self.log.emit(escape(str(e)))
                 return False
 
             if not (userinfo and "user" in userinfo and "name" in userinfo["user"]):
                 browser.deleteLater()
-                return False  # TODO do something
+                self.status.emit("Error getting Last.fm user details")
+                self.log.emit("Username not found")
+                return False
 
             self.__name = "{}'s Last.fm account".format(userinfo["user"]["name"])
             self.__id = "lastfm-{}".format(self.__username)
@@ -176,6 +184,7 @@ class SourceModule(modules.SourceModule):
 
         if not self.__get_session_key(browser):
             browser.deleteLater()
+            self.status.emit("Unable to get Last.fm session key")
             return False
 
         browser.deleteLater()

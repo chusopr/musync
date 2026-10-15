@@ -38,18 +38,25 @@ class Page1(WizardPage):
 
     @Slot(modules.SourceModule)
     def __account_selected(self, side, account):
-        self.setCompleted(False)
-
         account.status.connect(self.status.emit)
         account.log.connect(self.log.emit)
 
         if not account.isAuthenticated() and not account.authenticate(parent=self):
-            # TODO show error
-            return False
+            QMessageBox(QMessageBox.Warning, "Authentication failed", """Authentication failed.
+
+Possible causes:
+* Wrong credentials.
+* User cancelled.
+* Module or server error.
+
+Check the log for more details.""", QMessageBox.Ok, self).show()
+            return
 
         playlists = account.getPlaylists()
         if not playlists or len(playlists) == 0:
             return  # TODO do something else than silently fail
+
+        self.setCompleted(False)
 
         self.findChild(QLabel, "SourceLabel{}".format(side)).setText("Selected account: " + account.getName())
         self.findChild(QLabel, "SourceLabel{}".format(side)).setToolTip("Selected account: " + account.getName())
