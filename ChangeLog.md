@@ -3,6 +3,8 @@
 * Fix dialogs' sizes and positioning.
 * Replaced Selenium WebDriver with QTWebEngine removing dependency on an external Google Chrome.
 * Amazon: fix authentication loop making it impossible to add new accounts.
+* Update binary licenses and exclude Linux-specific modules from Windows and MacOS builds.
+* Added an icon.
 
 # 0.7.0
 
