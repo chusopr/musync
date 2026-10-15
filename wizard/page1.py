@@ -95,6 +95,7 @@ class Page1(WizardPage):
 
     def __playlist_select(self, side):
         self.setCompleted(False)
+        self.__loaded[side] = False
 
         # Wait for any comparison in progress so we don't replace songs being compared
         if self.__threads["compare"] is not None and self.__threads["compare"].is_alive():
@@ -170,6 +171,8 @@ class Page1(WizardPage):
             li.track = t
             li.setToolTip(li.text())
 
+        self.__loaded[side] = True
+
         p0 = self.findChild(QComboBox, "Playlist0")
         p1 = self.findChild(QComboBox, "Playlist1")
         t0 = self.findChild(QListWidget, "Tracklist0")
@@ -179,8 +182,7 @@ class Page1(WizardPage):
         if not (
             p0.currentData() is None
             or p1.currentData() is None
-            or self.__threads[0].is_alive()
-            or self.__threads[1].is_alive()
+            or not self.__loaded[int(not side)]
         ):
             # Check that at least one playlist is writable
             if self.__sources[0].getId() == self.__sources[1].getId() and p0.currentData()["id"] == p1.currentData()["id"]:
@@ -376,6 +378,7 @@ class Page1(WizardPage):
         super().__init__()
 
         self.__load_id = [0, 0]
+        self.__loaded = [False, False]
         self.__cancel = [None, None]
         self.__build_ui()
 
