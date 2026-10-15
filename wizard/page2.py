@@ -75,9 +75,6 @@ class Page2(WizardPage):
 
         self.__songs_table.addWidget(combo, self.__songs_table.rowCount() - 1, int(not side))
 
-    def getItems(self):
-        return self.__items
-
     def __search_songs(self, sources, playlist0, playlist1, items):
         pos0 = pos1 = 0
 
