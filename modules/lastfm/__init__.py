@@ -188,7 +188,7 @@ class SourceModule(modules.SourceModule):
             {
                 "id": "recent",
                 "name": "Recent tracks",
-                "writable": True
+                "writable": False
             },
             {
                 "id": "loved",
