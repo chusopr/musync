@@ -11,7 +11,6 @@ class SourcesDialog(QDialog):
     @Slot(bool)
     @Slot(QListWidgetItem)
     def __add_account(self, sourcesList):
-        module_name = sourcesList.currentItem().text()
         module_slug = sourcesList.currentItem().slug
 
         if module_slug not in modules.modules:
