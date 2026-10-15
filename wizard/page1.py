@@ -53,8 +53,22 @@ Check the log for more details.""", QMessageBox.Ok, self).show()
             return
 
         playlists = account.getPlaylists()
-        if not playlists or len(playlists) == 0:
-            return  # TODO do something else than silently fail
+        if playlists == []:
+            QMessageBox(QMessageBox.Information, "No playlists found", """No playlists were found for this account.
+
+Please choose another account which has playlists or create a playlist before choosing this account.""", QMessageBox.Ok, self).show()
+            return
+
+        if not playlists:
+            QMessageBox(QMessageBox.Warning, "Unable to load playlists", """It was not possible to load the playlists for this account.
+
+Possible causes:
+* Module or server error.
+* User cancelled.
+* Wrong credentials.
+
+Check the log for more details.""", QMessageBox.Ok, self).show()
+            return
 
         self.setCompleted(False)
 
