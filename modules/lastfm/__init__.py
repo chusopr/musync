@@ -320,6 +320,6 @@ class SourceModule(modules.SourceModule):
             if love_request.status_code == 200:
                 return True
 
-            self.log.emit("Failed to add {} - {} to {} playlist in {}: {}".format(track["artist"], track["title"], playlist["name"], self.__name, love_request.text))
+            self.log.emit(f"Failed to add {escape(track['artist'])} - {escape(track['title'])} to {escape(playlist['name'])} playlist in {escape(self.__name)}: {escape(love_request.text)}")
 
         return False
