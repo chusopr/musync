@@ -4,7 +4,7 @@ import modules
 
 from PySide6.QtWidgets import QWizard, QMessageBox, QFrame, QGridLayout, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox, QListWidget, QListWidgetItem
 from PySide6.QtGui import QColor
-from PySide6.QtCore import Slot, Signal
+from PySide6.QtCore import Qt, Slot, Signal
 import html
 import re
 import threading
@@ -28,9 +28,9 @@ class Page1(WizardPage):
 
     __change_next_tooltip = Signal(str)
     __tracklist_ready = Signal(int, int, list)
-    __match_found = Signal(int, int, int)
-    __match_not_found = Signal(int, int)
-    __compare_finished = Signal()
+    __match_found = Signal(int, int, int, list)
+    __match_not_found = Signal(int, int, list)
+    __compare_finished = Signal(list)
 
     @Slot(str)
     def setNextButtonTooltip(self, str):
@@ -104,6 +104,7 @@ class Page1(WizardPage):
         otherList = self.findChild(QListWidget, "Tracklist{}".format(int(not side)))
         for i in range(otherList.count()):
             peer = otherList.item(i)
+            peer.setData(Qt.ForegroundRole, None)
             if "peer" in peer.track:
                 del peer.track["peer"]
 
@@ -203,8 +204,10 @@ class Page1(WizardPage):
                     self.status.emit(f"Playlist {p} in {a} has no items and no new content can be added since it's read-only")
                     self.__change_next_tooltip.emit("The two selected playlists don't allow continuing")
 
-    @Slot(int, int, int)
-    def __highlight_match(self, side, pos, match):
+    @Slot(int, int, int, list)
+    def __highlight_match(self, side, pos, match, load_ids):
+        if load_ids != self.__load_id:
+            return
         song = self.findChild(QListWidget, "Tracklist{}".format(side)).item(pos)
         otherSong = self.findChild(QListWidget, "Tracklist{}".format(int(not side))).item(match)
         song.setForeground(QColor(0, 127, 0))
@@ -218,8 +221,10 @@ class Page1(WizardPage):
             html.escape(self.__sources[int(not side)].getName())
         ))
 
-    @Slot(int, int)
-    def __highlight_no_match(self, side, pos):
+    @Slot(int, int, list)
+    def __highlight_no_match(self, side, pos, load_ids):
+        if load_ids != self.__load_id:
+            return
         song = self.findChild(QListWidget, "Tracklist{}".format(side)).item(pos)
         song.setForeground(QColor(127, 0, 0))
         self.log.emit('Song <span style="color: #be0000">{}</span> from tracklist <strong>{}</strong> in <strong>{}</strong> not found in tracklist <strong>{}</strong> from <strong>{}</strong>'.format(
@@ -247,6 +252,7 @@ class Page1(WizardPage):
 
     def __compare_playlists(self):
         pos0 = pos1 = 0
+        load_ids = list(self.__load_id)
         while pos0 < len(self.__items[0]) or pos1 < len(self.__items[1]):
             self.status.emit("Comparing tracklists ({} % completed).".format(round((pos0 + pos1) * 100 / (len(self.__items[0]) + len(self.__items[1])))))
 
@@ -266,7 +272,7 @@ class Page1(WizardPage):
             found = False
 
             if song["compare_key"] == "":
-                self.__match_not_found.emit(side, pos)
+                self.__match_not_found.emit(side, pos, load_ids)
                 continue
 
             for j in range(pos, len(self.__items[not side])):
@@ -277,14 +283,18 @@ class Page1(WizardPage):
                     found = True
                     song["peer"] = j
                     otherSong["peer"] = pos
-                    self.__match_found.emit(side, pos, j)
+                    self.__match_found.emit(side, pos, j, load_ids)
                     break
             if not found:
-                self.__match_not_found.emit(side, pos)
+                self.__match_not_found.emit(side, pos, load_ids)
 
-        # FIXME: Should only be run when both tracklists finished downloading
-        self.status.emit("Finished comparing tracks.")
-        self.__compare_finished.emit()
+        self.__compare_finished.emit(load_ids)
+
+    @Slot(list)
+    def __finish_comparing(self, load_ids):
+        if self.__load_id == load_ids:
+            self.status.emit("Finished comparing tracks.")
+            self.setCompleted(True)
 
     @Slot(bool)
     def __unlink_songs(self):
@@ -373,7 +383,7 @@ class Page1(WizardPage):
         self.__tracklist_ready.connect(self.__add_tracks)
         self.__match_found.connect(self.__highlight_match)
         self.__match_not_found.connect(self.__highlight_no_match)
-        self.__compare_finished.connect(lambda: self.setCompleted(True))
+        self.__compare_finished.connect(self.__finish_comparing)
 
     def getSources(self):
         return self.__sources
