@@ -19,8 +19,15 @@ class SourcesDialog(QDialog):
         account = modules.create_object(module_slug)
 
         if not account.authenticate(parent=self):
-            # TODO do something else than failing silently
-            return False
+            QMessageBox(QMessageBox.Warning, "Authentication failed", """Authentication failed.
+
+Possible causes:
+* Wrong credentials.
+* User cancelled.
+* Module or server error.
+
+Check the log for more details.""", QMessageBox.Ok, self).show()
+            return
 
         accounts = QSettings()
         accounts.beginGroup("accounts")
