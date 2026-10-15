@@ -5,7 +5,6 @@ import re
 import os
 from types import ModuleType
 from abc import abstractmethod
-from sys import stderr
 from PySide6.QtWidgets import QMessageBox as MessageBox
 from PySide6.QtCore import Signal, QObject, QSettings
 
@@ -96,23 +95,29 @@ def create_object(mod):
     return m
 
 
-def load():
+def load(bogus_module):
     for m in os.listdir(ModulesFolder):
         m_dir = os.path.join(ModulesFolder, m)
-        if not os.path.isdir(m_dir) or not os.path.isfile(os.path.join(m_dir, ModuleMain + ".py")):
-            if m not in ["__init__.py", "__init__.pyc", "__pycache__"]:
-                print("{} is not a valid module".format(m), file=stderr)
+        if not os.path.isdir(m_dir) or m.startswith(".") or m in ["__init__.py", "__init__.pyc", "__pycache__"]:
+            continue
+        if not os.path.isfile(os.path.join(m_dir, ModuleMain + ".py")):
+            bogus_module(m, "is not a valid module")
             continue
         spec = importlib.util.find_spec("modules.{}".format(m))
         module = ModuleType(spec.name)
         module.__spec__ = spec
-        spec.loader.exec_module(module)
+        try:
+            spec.loader.exec_module(module)
+        except Exception as e:
+            bogus_module(m, str(e))
+            del module
+            continue
         if not hasattr(module, "SourceModule"):
-            print("{} is not a valid module".format(m), file=stderr)
+            bogus_module(m, "it doesn't define a SourceModule class")
             del module
             continue
         if not issubclass(module.SourceModule, SourceModule):
-            # TODO: log message
+            bogus_module(m, "it doesn't inherit from modules.SourceModule")
             del module
             continue
         modules[m] = module.SourceModule.getName(module.SourceModule)
