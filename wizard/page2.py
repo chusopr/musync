@@ -83,7 +83,6 @@ class Page2(WizardPage):
 
         self.__items = {0: {"playlist": playlist0, "tracks": {}}, 1: {"playlist": playlist1, "tracks": {}}}
 
-        # FIXME: crashes if left list is empty
         while pos0 < len(items[0]) or pos1 < len(items[1]):
             self.status.emit("Searching songs ({} % completed).".format(round((pos0 + pos1) * 100 / (len(items[0]) + len(items[1])))))
 
@@ -108,7 +107,7 @@ class Page2(WizardPage):
             self.__items[int(not side)]["tracks"][pos] = {"src": song, "dst": None}
             self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results)
 
-        self.status.emit("Searching songs completed.".format(int((pos0 + pos1) * 100 / (len(items[0]) + len(items[1])))))
+        self.status.emit("Searching songs completed.")
         self.setCompleted(True)
 
     def update(self):
