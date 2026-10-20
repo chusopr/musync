@@ -31,6 +31,7 @@ class Page1(WizardPage):
     __match_found = Signal(int, int, int, list)
     __match_not_found = Signal(int, int, list)
     __compare_finished = Signal(list)
+    __tracklist_failed = Signal(int, int)
 
     @Slot(str)
     def setNextButtonTooltip(self, str):
@@ -168,6 +169,9 @@ Check the log for more details.""", QMessageBox.Ok, self).show()
 
         # Get tracks for the current playlist
         tracks = self.__sources[side].getTracks(current_playlist, cancel)
+        if not tracks and tracks != []:
+            self.__tracklist_failed.emit(side, load_id)
+            return
         if cancel.is_set():
             return
         if tracks:
@@ -176,6 +180,17 @@ Check the log for more details.""", QMessageBox.Ok, self).show()
 
     def getItems(self):
         return self.__items
+
+    @Slot(int, int)
+    def __failed_tracklist(self, side, load_id):
+        if load_id != self.__load_id[side]:
+            return
+        QMessageBox(QMessageBox.Critical, "Unable to load songs", """Failed to load songs from the playlist.
+
+The module is probably buggy or the service it queries is down.
+
+Check the log for more details.""", QMessageBox.Ok, self).show()
+
 
     @Slot(int, int, list)
     def __add_tracks(self, side, load_id, tracks):
@@ -408,6 +423,7 @@ Check the log for more details.""", QMessageBox.Ok, self).show()
         self.__match_found.connect(self.__highlight_match)
         self.__match_not_found.connect(self.__highlight_no_match)
         self.__compare_finished.connect(self.__finish_comparing)
+        self.__tracklist_failed.connect(self.__failed_tracklist)
 
     def getSources(self):
         return self.__sources
