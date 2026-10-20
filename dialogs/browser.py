@@ -1,8 +1,25 @@
-from PySide6.QtCore import QEventLoop, QUrl, QTimer, Slot
+from PySide6.QtCore import QEventLoop, QUrl, QTimer, Slot, Signal
 from PySide6.QtWidgets import QDialog, QVBoxLayout
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage
+from PySide6.QtWebEngineCore import QWebEngineProfile, QWebEnginePage, QWebEngineUrlRequestInterceptor, QWebEngineUrlRequestInfo
 from PySide6.QtNetwork import QNetworkCookie
+
+
+class RequestInterceptor(QWebEngineUrlRequestInterceptor):
+    request = Signal(dict)
+    __method = None
+
+    def set_method(self, m: str):
+        self.__method = m
+
+    def interceptRequest(self, request: QWebEngineUrlRequestInfo):
+        if self.__method and request.requestMethod().toStdString() != self.__method:
+            return
+
+        self.request.emit({
+            "headers": {k.toStdString(): v.toStdString() for k, v in request.httpHeaders().items()}
+        })
+
 
 class Browser(QDialog):
 
@@ -85,12 +102,16 @@ class Browser(QDialog):
 
     @Slot(QNetworkCookie)
     def __cookie_added(self, cookie):
-        self.__cookies[cookie.name()] = cookie
+        if cookie.domain() not in self.__cookies:
+            self.__cookies[cookie.domain()] = {}
+        self.__cookies[cookie.domain()][cookie.name().toStdString()] = {
+            "value": cookie.value().toStdString()
+        }
 
     @Slot(QNetworkCookie)
     def __cookie_removed(self, cookie):
-        if cookie.name() in self.__cookies:
-            del self.__cookies[cookie.name()]
+        if cookie.domain() in self.__cookies and cookie.name().toStdString() in self.__cookies[cookie.domain()]:
+            del self.__cookies[cookie.domain()][cookie.name().toStdString()]
 
     def get(self, url):
         loop = QEventLoop()
@@ -102,4 +123,27 @@ class Browser(QDialog):
         return self.__webview.page().url()
 
     def get_cookies(self):
-        return self.__cookies.values()
+        return self.__cookies
+
+    def wait_for_request(self, interceptor):
+        result = None
+        loop = QEventLoop()
+
+        def callback(request):
+            nonlocal result
+            result = request
+            loop.quit()
+
+        interceptor.request.connect(callback)
+        self.finished.connect(loop.quit)
+
+        loop.exec()
+
+        interceptor.request.disconnect(callback)
+        return result
+
+    def intercept_request(self, method=None):
+        interceptor = RequestInterceptor(self.__webview.page())
+        interceptor.set_method(method)
+        self.__webview.page().setUrlRequestInterceptor(interceptor)
+        return self.wait_for_request(interceptor)

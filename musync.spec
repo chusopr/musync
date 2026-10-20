@@ -9,6 +9,8 @@ datas=[
 
 if platform == "linux":
     datas += [
+        # Needed by YTMusic module
+        (__import__('ytmusicapi').__path__[0], 'ytmusicapi'),
         # Needed by secret service keyring backend
         (__import__('secretstorage').__path__[0], "secretstorage"),
         (__import__('jeepney').__path__[0], "jeepney"),

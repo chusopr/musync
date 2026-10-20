@@ -20,3 +20,4 @@ OpenSSL by The OpenSSL Authors
 Mesa by Brian Paul
 libffi by Anthony Green
 Visual Studio C Runtime Redistributable by Microsoft Corporation
+ytmusicapi by sigma67
