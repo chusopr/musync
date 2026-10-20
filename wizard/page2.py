@@ -102,7 +102,7 @@ class Page2(WizardPage):
 
             search_results = sources[int(not side)].searchTrack(song)
             self.__items[int(not side)]["tracks"][pos] = {"src": song, "dst": None}
-            self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results)
+            self.__new_song_row.emit(side, pos, "{} - {}".format(song["artist"], song["title"]), search_results if isinstance(search_results, list) else [])
 
         self.status.emit("Searching songs completed.")
         self.setCompleted(True)
