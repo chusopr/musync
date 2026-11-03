@@ -12,7 +12,7 @@ app.setWindowIcon(QIcon(os.path.join(os.path.dirname(os.path.abspath(__file__)),
 QCoreApplication.setOrganizationName("muSync")
 QCoreApplication.setOrganizationDomain("musync.link")
 QCoreApplication.setApplicationName("muSync")
-QCoreApplication.setApplicationVersion("0.8.0")
+QCoreApplication.setApplicationVersion("0.9.0")
 
 mainWindow = gui.MainWindow()
 

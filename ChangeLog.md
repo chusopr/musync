@@ -1,3 +1,31 @@
+# 0.9.0
+
+* Last.fm:
+  * The API now returns loved songs in a different format.
+  * Some errors while requesting the session key made it impossible to add songs to playlists.
+  * Reserved characters like + and & in song titles were not handled correctly.
+  * Make the Recent Songs playlist read-only to avoid trying to sync songs to this playlist, which would fail.
+* Amazon Music: removed. The private API was changed and the module is not working anymore.
+  A public API is being developed, so not worth the effort of reverse-engineer it again.
+* YouTube Music: new source module.
+* Multiple bug fixes, improvements and cleanup:
+  * Removed dead code and unused imports.
+  * Implement many failure paths that were left just pending leading to undefined behaviour.
+  * Fix race conditions and improve thread handling.
+  * Comparison logic errors.
+  * Improve performance and reliability for comparing songs with non-ASCII characters.
+  * Move resource-intensive code out of the GUI thread to avoid the GUI getting frozen.
+  * Move GUI-handling code to the GUI thread to avoid undefined behaviour.
+  * Bug in songs sync progress causing it to go above 100 %.
+  * Possible session cookies leak in the browser.
+  * Some log messages were duplicated.
+  * Selecting a new playlist while the old one was still lading caused both playlists to be mixed.
+  * More stability and reliability fixes.
+  * Changing the selected account was not correctly implemented.
+  * Fix stale accounts for modules that no longer exist.
+  * Don't allow to continue if both playlists are the same.
+  * Don't try to sync songs to a read-only playlist.
+
 # 0.8.0
 
 * Fix dialogs' sizes and positioning.
